@@ -28,7 +28,7 @@ contract AccountRegistry is ERC721Holder, AccessControl, Ownable {
         tokenContract = EneptiToken(tokenAddress);
     }
 
-    function create(uint256 nftId, uint256[] memory _dna) external hasEneptiToken isApproved onlyAccountManager {
+    function create(uint256 nftId) external hasEneptiToken isApproved onlyAccountManager {
         tokenContract.safeTransferFrom(_msgSender(), address(this), nftId);
         accountContract.mint(_msgSender());
 
