@@ -324,7 +324,6 @@ __metadata:
     "@codechecks/client": ^0.1.11
     "@commitlint/cli": ^13.2.0
     "@commitlint/config-conventional": ^13.2.0
-    "@commitlint/format": ^13.2.0
     "@ethersproject/abi": ^5.4.1
     "@ethersproject/abstract-signer": ^5.4.1
     "@ethersproject/bignumber": ^5.4.2
