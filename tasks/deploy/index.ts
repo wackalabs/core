@@ -1,4 +1,7 @@
-import "./lmnToken";
-import "./roomBase";
-import "./bancorFormula";
-import "./socialToken";
+import "./AccountRegistry";
+import "./BancorFormula";
+import "./EneptiAccount";
+import "./EneptiToken";
+import "./LMNToken";
+import "./SocialToken";
+import "./RoomBase";
