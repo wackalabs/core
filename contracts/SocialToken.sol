@@ -44,8 +44,19 @@ contract SocialToken is ERC721, AccessControl {
     Counters.Counter public _nftId;
     LMNToken public lmnToken;
 
-    //Mapping between Enepti Token ids and their NFT DNA sequence
-    mapping(uint256 => uint256[]) public dnaSequences;
+    struct GenArtInfo {
+        uint256[] dnaSequence;
+        string script;
+        string ipfsHash;
+        bool useIpfs;
+    }
+
+    //Mapping between Enepti Token ids and their Generative Art info
+    mapping(uint256 => GenArtInfo) public genArtInfos;
+
+    //URIs used for pointing to the Generative Art image
+    string internal baseURI;
+    string internal baseIpfsURI;
 
     constructor(
         LMNToken _lmnToken,
@@ -95,11 +106,42 @@ contract SocialToken is ERC721, AccessControl {
     }
 
     function updateDna(uint256 tokenId, uint256[] memory dna) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        dnaSequences[tokenId] = dna;
+        genArtInfos[tokenId].dnaSequence = dna;
     }
 
     function getDna(uint256 tokenId) external view returns (uint256[] memory) {
-        return dnaSequences[tokenId];
+        return genArtInfos[tokenId].dnaSequence;
+    }
+
+    function updateScript(uint256 tokenId, string memory _script) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        genArtInfos[tokenId].script = _script;
+    }
+
+    function getScript(uint256 tokenId) public view returns (string memory) {
+        return genArtInfos[tokenId].script;
+    }
+
+    function toggleUseIpfs(uint256 tokenId) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        genArtInfos[tokenId].useIpfs = !genArtInfos[tokenId].useIpfs;
+    }
+
+    function isUsingIpfs(uint256 tokenId) public view returns (bool) {
+        return genArtInfos[tokenId].useIpfs;
+    }
+
+    function updateBaseURI(string memory _baseURI) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        baseURI = _baseURI;
+    }
+
+    function updateBaseIpfsURI(string memory _baseIpfsURI) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        baseIpfsURI = _baseIpfsURI;
+    }
+
+    function genArtTokenURI(uint256 tokenId) public view returns (string memory) {
+        if (genArtInfos[tokenId].useIpfs) {
+            return string(abi.encodePacked(baseIpfsURI, tokenId));
+        }
+        return string(abi.encodePacked(baseURI, tokenId));
     }
 
     /**
