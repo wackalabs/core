@@ -30,12 +30,14 @@ contract SocialToken is ERC721, AccessControl {
 
     // for the dividend tracking
     address public creator;
-    uint256 newUsersCount;
-    uint256 currentDividend;
-    uint256 currentValueDeposited;
-    uint256 dividendPercentage = 20;
-    uint256 pointMultiplier = 10e18;
-    mapping(uint256 => uint256) public dividendReceived; // tokenID => dividendReceived
+    uint256 public newUsersCount;
+    uint256 public currentDividend;
+    uint256 public currentValueDeposited;
+    uint256 public dividendPercentage = 20;
+
+    // tokenID => dividendReceived
+    mapping(uint256 => uint256) public dividendReceived;
+    // accrued dividends for each token
     mapping(uint256 => uint256) public dividends;
 
     // social token  tracker
@@ -88,8 +90,9 @@ contract SocialToken is ERC721, AccessControl {
      * Token price is based on the Creator stats on the social network
      */
     function buySocialToken(uint256 _amount) public {
+        require(SocialToken(this).balanceOf(msg.sender) == 0, "only one social token holding per address allowed.");
         require(_amount >= price, "price is too low");
-        price = (price * 1010) / 1000; // increases by 1% each time
+        price = (price * 1010) / 1000; // increases by 1% each time TODO: integrate dynamic bonding curve
         lmnToken.transferFrom(msg.sender, address(this), price);
         _safeMint(msg.sender, _nftId.current());
 
@@ -146,7 +149,7 @@ contract SocialToken is ERC721, AccessControl {
     /**
      * @dev Dividend amt is calculated based on the creators {dividendPercentage}
      * and recorded for the tokenHolders based on collected {LMNToken} token.
-     * Remaning {LMNToken} is burned and creator is awarded with Governace Token
+     * Remaining {LMNToken} is burned and creator is awarded with Governace Token
      */
     function retrieveLMN() public onlyRole(DEFAULT_ADMIN_ROLE) updateDividendTracker {
         // TODO: make the function timelocked
