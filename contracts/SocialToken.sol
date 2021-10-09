@@ -28,15 +28,15 @@ contract SocialToken is ERC721, AccessControl {
         return supportedInterfaces[interfaceID];
     }
 
-    // for the divident tracking
+    // for the dividend tracking
     address public creator;
     uint256 newUsersCount;
-    uint256 currentDivident;
+    uint256 currentDividend;
     uint256 currentValueDeposited;
-    uint256 dividentPercentage = 20;
+    uint256 dividendPercentage = 20;
     uint256 pointMultiplier = 10e18;
-    mapping(uint256 => uint256) public dividentReceived; // tokenID => dividentReceived
-    mapping(uint256 => uint256) public dividents;
+    mapping(uint256 => uint256) public dividendReceived; // tokenID => dividendReceived
+    mapping(uint256 => uint256) public dividends;
 
     // social token  tracker
     uint256 public price = 100;
@@ -75,10 +75,10 @@ contract SocialToken is ERC721, AccessControl {
 
     event SocialTokensMinted(uint256 indexed socialTokens);
 
-    // update the divident tracker creator provides dividents
-    modifier updateDividentTracker() {
+    // update the dividend tracker creator provides dividends
+    modifier updateDividendTracker() {
         _;
-        currentDivident = currentDivident.add(1);
+        currentDividend = currentDividend.add(1);
         newUsersCount = 0;
         currentValueDeposited = 0;
     }
@@ -93,16 +93,15 @@ contract SocialToken is ERC721, AccessControl {
         lmnToken.transferFrom(msg.sender, address(this), price);
         _safeMint(msg.sender, _nftId.current());
 
-        // add token to receive next dividents
-        dividentReceived[_nftId.current()] = currentDivident.add(1);
+        // add token to receive next dividends
+        dividendReceived[_nftId.current()] = currentDividend.add(1);
         currentValueDeposited = currentValueDeposited.add(price);
+
+        emit SocialTokensMinted(_nftId.current());
 
         _nftId.increment();
         newUsersCount = newUsersCount.add(1);
         _totalSupply = _totalSupply.add(1);
-
-        // emit SocialTokensMinted(socialTokensAmount);
-        // return socialTokensAmount;
     }
 
     function updateDna(uint256 tokenId, uint256[] memory dna) external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -145,14 +144,14 @@ contract SocialToken is ERC721, AccessControl {
     }
 
     /**
-     * @dev Divident amt is calculated based on the creators {dividentPercentage}
+     * @dev Dividend amt is calculated based on the creators {dividendPercentage}
      * and recorded for the tokenHolders based on collected {LMNToken} token.
      * Remaning {LMNToken} is burned and creator is awarded with Governace Token
      */
-    function retrieveLMN() public onlyRole(DEFAULT_ADMIN_ROLE) updateDividentTracker {
+    function retrieveLMN() public onlyRole(DEFAULT_ADMIN_ROLE) updateDividendTracker {
         // TODO: make the function timelocked
         if (_nftId.current() == newUsersCount) {
-            // Creators withdraws for the first time and no users to receivers to get dividents
+            // Creators withdraws for the first time and no users to receivers to get dividends
             lmnToken.transfer(creator, currentValueDeposited);
             // TODO: Give the creator Governance Token
             //  1) Burn token
@@ -160,15 +159,15 @@ contract SocialToken is ERC721, AccessControl {
             //  2) Give the creator ENP token
             return;
         }
-        // give the lmn tokes as dividents
+        // give the lmn tokes as dividends
         uint256 receivers = _nftId.current().sub(newUsersCount);
-        uint256 receiveableAmt = currentValueDeposited.mul(dividentPercentage).div(100);
+        uint256 receiveableAmt = currentValueDeposited.mul(dividendPercentage).div(100);
 
-        uint256 dividentAmt = receiveableAmt.div(receivers);
+        uint256 dividendAmt = receiveableAmt.div(receivers);
         uint256 creatorAmt = currentValueDeposited.sub(receiveableAmt);
 
-        // add dividents to record
-        dividents[currentDivident] = dividentAmt;
+        // add dividends to record
+        dividends[currentDividend] = dividendAmt;
 
         // give the creator LMN
         lmnToken.transfer(creator, creatorAmt);
@@ -179,22 +178,22 @@ contract SocialToken is ERC721, AccessControl {
     }
 
     /**
-     * @dev Grants all the dividents held by the token to the tokenOwner as LMN Tokens.
+     * @dev Grants all the dividends held by the token to the tokenOwner as LMN Tokens.
      */
-    function withdrawDividents(uint256 _tokenId) public {
-        require(ownerOf(_tokenId) == msg.sender, "Only token owner can request for the token divident request");
+    function withdrawDividends(uint256 _tokenId) public {
+        require(ownerOf(_tokenId) == msg.sender, "Only token owner can request for the token dividend request");
 
-        uint256 tokenCurDiv = dividentReceived[_tokenId];
-        for (uint256 i = tokenCurDiv; i < currentDivident; i++) {
-            uint256 dividentAmt = dividents[i];
+        uint256 tokenCurDiv = dividendReceived[_tokenId];
+        for (uint256 i = tokenCurDiv; i < currentDividend; i++) {
+            uint256 dividendAmt = dividends[i];
             // debug
-            // console.log("paying divident", i);
-            // console.log(dividentAmt, "LMN Tokens");
+            // console.log("paying dividend", i);
+            // console.log(dividendAmt, "LMN Tokens");
 
-            lmnToken.transfer(msg.sender, dividentAmt);
+            lmnToken.transfer(msg.sender, dividendAmt);
         }
 
         // update the received record
-        dividentReceived[_tokenId] = currentDivident;
+        dividendReceived[_tokenId] = currentDividend;
     }
 }

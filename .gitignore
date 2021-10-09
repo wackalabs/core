@@ -24,3 +24,13 @@ coverage.json
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# typescript build artifacts
+commitlint.config.d.ts
+commitlint.config.js
+hardhat.config.d.ts
+hardhat.config.js
+tasks/**/*.js
+tasks/**/*.d.ts
+test/**/*.js
+test/**/*.d.ts
