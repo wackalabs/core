@@ -59,7 +59,9 @@
     "typescript": "^4.4.3"
   },
   "files": [
-    "/contracts"
+    "contracts",
+    "artifacts/contracts/**/*.json",
+    "!artifacts/contracts/**/*.dbg.json"
   ],
   "keywords": [
     "blockchain",
