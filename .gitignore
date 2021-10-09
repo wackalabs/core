@@ -34,3 +34,6 @@ tasks/**/*.js
 tasks/**/*.d.ts
 test/**/*.js
 test/**/*.d.ts
+
+# dapp tools
+/out

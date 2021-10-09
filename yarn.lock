@@ -333,6 +333,7 @@ __metadata:
     "@nomiclabs/hardhat-etherscan": ^2.1.6
     "@nomiclabs/hardhat-waffle": ^2.0.1
     "@openzeppelin/contracts": ^4.1.0
+    "@openzeppelin/contracts-upgradeable": ^4.3.2
     "@typechain/ethers-v5": ^7.1.2
     "@typechain/hardhat": ^2.3.0
     "@types/chai": ^4.2.22
@@ -1317,6 +1318,13 @@ __metadata:
     mkdirp: ^1.0.4
     rimraf: ^3.0.2
   checksum: c96381d4a37448ea280951e46233f7e541058cf57a57d4094dd4bdcaae43fa5872b5f2eb6bfb004591a68e29c5877abe3cdc210cb3588cbf20ab2877f31a7de7
+  languageName: node
+  linkType: hard
+
+"@openzeppelin/contracts-upgradeable@npm:^4.3.2":
+  version: 4.3.2
+  resolution: "@openzeppelin/contracts-upgradeable@npm:4.3.2"
+  checksum: b7a0e4733613fe1949e5e31f52b48b8c5080bc2df37f1d623c76b726554b41264680adfa1f1861da28273fc1544de6b6666fd37588a8c47f90cbefb0b8c9f310
   languageName: node
   linkType: hard
 

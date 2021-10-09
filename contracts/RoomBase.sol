@@ -46,7 +46,7 @@ contract RoomBase {
         creatorRoomTracker[msg.sender] = room;
 
         //TODO: add reward points to the creator based on the room stats
-        uint256 _reward = CalculateCreatorReward(room);
+        uint256 _reward = calculateCreatorReward(room);
         creatorRewardTracker[msg.sender] += _reward;
     }
 

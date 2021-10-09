@@ -21,16 +21,16 @@ contract AccountRegistry is ERC721Holder, AccessControl, Ownable {
     mapping(address => Account) public accounts;
 
     EneptiToken public tokenContract;
-    EneptiAccount public accountContract;
+    EneptiAccount public account;
 
     constructor(address accountAddress, address tokenAddress) {
-        accountContract = EneptiAccount(accountAddress);
+        account = EneptiAccount(accountAddress);
         tokenContract = EneptiToken(tokenAddress);
     }
 
     function create(uint256 nftId) external hasEneptiToken isApproved onlyAccountManager {
         tokenContract.safeTransferFrom(_msgSender(), address(this), nftId);
-        accountContract.mint(_msgSender());
+        account.mint(_msgSender());
 
         address _deployment = Create2.computeAddress(
             keccak256(abi.encode(nftId)),
