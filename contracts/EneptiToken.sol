@@ -7,11 +7,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract EneptiToken is ERC721PresetMinterPauserAutoId, Ownable {
     bytes32 public constant ACCOUNT_MANAGER_ROLE = keccak256("ACCOUNT_MANAGER_ROLE");
 
-    constructor() ERC721PresetMinterPauserAutoId("Enepti Token", "ENEPTI", "https://enepti.com/nft/") {
-        // Starting with 10 000 ENEPTI NFTs
-        for (uint256 i = 0; i < 10**4; i++) {
-            mint(msg.sender);
-        }
+    constructor() ERC721PresetMinterPauserAutoId("Enepti Token", "ENEPTI", "") {
+        mint(msg.sender);
     }
 
     function _beforeTokenTransfer(

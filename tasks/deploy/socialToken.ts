@@ -1,9 +1,23 @@
-import { task } from "hardhat/config";
+import { subtask, task } from "hardhat/config";
 import { TaskArguments } from "hardhat/types";
 
 import { SocialToken, SocialToken__factory } from "../../typechain";
 
 task("deploy:SocialToken")
+  .addParam("lmnToken", "lmn_token_address")
+  .addParam("name", "token_name")
+  .addParam("symbol", "token_symbol")
+  .addParam("creator", "creator_address")
+  .setAction(async (taskArguments: TaskArguments, hre) => {
+    await hre.run("deploySocialToken", {
+      lmnToken: taskArguments.lmnToken,
+      name: taskArguments.name,
+      symbol: taskArguments.symbol,
+      creator: taskArguments.creator,
+    });
+  });
+
+subtask("deploySocialToken")
   .addParam("lmnToken", "lmn_token_address")
   .addParam("name", "token_name")
   .addParam("symbol", "token_symbol")
@@ -20,4 +34,5 @@ task("deploy:SocialToken")
     );
     await socialToken.deployed();
     console.log("SocialToken deployed to: ", socialToken.address);
+    return socialToken;
   });
