@@ -2,7 +2,11 @@ import "./AccountRegistry";
 import "./BancorFormula";
 import "./EneptiAccount";
 import "./EneptiToken";
+import "./ERC721TokenVault";
+import "./ERC721VaultFactory";
+import "./InitializeProxy";
 import "./LMNToken";
+import "./Settings";
 import "./SocialToken";
 import "./RoomBase";
 

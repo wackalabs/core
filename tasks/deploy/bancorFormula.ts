@@ -8,10 +8,10 @@ task("deploy:BancorFormula").setAction(async (taskArgs, hre) => {
 });
 
 subtask("deployBancorFormula").setAction(async function (taskArguments: TaskArguments, { ethers }) {
-  const bancorFormulafactory: BancorFormula__factory = <BancorFormula__factory>(
+  const bancorFormulaFactory: BancorFormula__factory = <BancorFormula__factory>(
     await ethers.getContractFactory("BancorFormula")
   );
-  const bancorFormula: BancorFormula = <BancorFormula>await bancorFormulafactory.deploy();
+  const bancorFormula: BancorFormula = <BancorFormula>await bancorFormulaFactory.deploy();
   await bancorFormula.deployed();
   console.log("BancorFormula deployed to: ", bancorFormula.address);
   return bancorFormula;

@@ -7,6 +7,7 @@
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
     "lib": ["es6"],
+    "outDir": "build",
     "module": "commonjs",
     "moduleResolution": "node",
     "noImplicitAny": true,
@@ -14,10 +15,9 @@
     "resolveJsonModule": true,
     "sourceMap": false,
     "strict": true,
-    "target": "es6",
-    "outDir": "build"
+    "target": "es6"
   },
   "exclude": ["node_modules"],
   "files": ["./hardhat.config.ts", "commitlint.config.ts"],
-  "include": ["tasks/**/*.ts", "test/**/*.ts"]
+  "include": ["tasks/**/*.ts", "test/**/*.ts", "typechain/**/*.d.ts", "typechain/**/*.ts"]
 }
