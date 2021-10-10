@@ -8,7 +8,7 @@ task("deploy:LMNToken").setAction(async (taskArgs, hre) => {
 });
 
 subtask("deployLMNToken").setAction(async function (taskArguments: TaskArguments, { ethers }) {
-  const lmnTokenFactory: LMNToken__factory = await ethers.getContractFactory("LMNToken");
+  const lmnTokenFactory: LMNToken__factory = <LMNToken__factory>await ethers.getContractFactory("LMNToken");
   const lmnToken: LMNToken = <LMNToken>await lmnTokenFactory.deploy();
   await lmnToken.deployed();
   console.log("LMNToken deployed to: ", lmnToken.address);

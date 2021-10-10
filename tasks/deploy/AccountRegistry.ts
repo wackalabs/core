@@ -17,7 +17,9 @@ task("deployAccountRegistry")
   .addParam("accountAddress", "account_address")
   .addParam("tokenAddress", "token_name")
   .setAction(async function (taskArguments: TaskArguments, { ethers }) {
-    const registryFactory: AccountRegistry__factory = await ethers.getContractFactory("AccountRegistry");
+    const registryFactory: AccountRegistry__factory = <AccountRegistry__factory>(
+      await ethers.getContractFactory("AccountRegistry")
+    );
     const contract: AccountRegistry = <AccountRegistry>(
       await registryFactory.deploy(taskArguments.accountAddress, taskArguments.tokenAddress)
     );

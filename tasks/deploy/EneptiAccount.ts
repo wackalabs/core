@@ -8,7 +8,9 @@ task("deploy:EneptiAccount").setAction(async (taskArgs, hre) => {
 });
 
 subtask("deployEneptiAccount").setAction(async function (taskArguments: TaskArguments, { ethers }) {
-  const accountFactory: EneptiAccount__factory = await ethers.getContractFactory("EneptiAccount");
+  const accountFactory: EneptiAccount__factory = <EneptiAccount__factory>(
+    await ethers.getContractFactory("EneptiAccount")
+  );
   const contract: EneptiAccount = <EneptiAccount>await accountFactory.deploy();
   await contract.deployed();
   console.log("EneptiAccount deployed to: ", contract.address);

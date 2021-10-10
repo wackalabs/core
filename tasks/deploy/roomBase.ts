@@ -8,7 +8,7 @@ task("deploy:RoomBase").setAction(async (taskArgs, hre) => {
 });
 
 subtask("deployRoomBase").setAction(async function (taskArguments: TaskArguments, { ethers }) {
-  const roomBasefactory: RoomBase__factory = await ethers.getContractFactory("RoomBase");
+  const roomBasefactory: RoomBase__factory = <RoomBase__factory>await ethers.getContractFactory("RoomBase");
   const roomBase: RoomBase = <RoomBase>await roomBasefactory.deploy();
   await roomBase.deployed();
   console.log("RoomBase deployed to: ", roomBase.address);

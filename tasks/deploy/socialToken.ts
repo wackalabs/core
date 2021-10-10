@@ -23,7 +23,9 @@ subtask("deploySocialToken")
   .addParam("symbol", "token_symbol")
   .addParam("creator", "creator_address")
   .setAction(async function (taskArguments: TaskArguments, { ethers }) {
-    const socialTokenFactory: SocialToken__factory = await ethers.getContractFactory("SocialToken");
+    const socialTokenFactory: SocialToken__factory = <SocialToken__factory>(
+      await ethers.getContractFactory("SocialToken")
+    );
     const socialToken: SocialToken = <SocialToken>(
       await socialTokenFactory.deploy(
         taskArguments.lmnToken,

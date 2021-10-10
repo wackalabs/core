@@ -20,16 +20,16 @@ contract AccountRegistry is ERC721Holder, AccessControl, Ownable {
 
     mapping(address => Account) public accounts;
 
-    EneptiToken public tokenContract;
+    EneptiToken public token;
     EneptiAccount public account;
 
     constructor(address accountAddress, address tokenAddress) {
         account = EneptiAccount(accountAddress);
-        tokenContract = EneptiToken(tokenAddress);
+        token = EneptiToken(tokenAddress);
     }
 
     function create(uint256 nftId) external hasEneptiToken isApproved onlyAccountManager {
-        tokenContract.safeTransferFrom(_msgSender(), address(this), nftId);
+        token.safeTransferFrom(_msgSender(), address(this), nftId);
         account.mint(_msgSender());
 
         address _deployment = Create2.computeAddress(
@@ -42,12 +42,12 @@ contract AccountRegistry is ERC721Holder, AccessControl, Ownable {
     }
 
     function activate(uint256 nftId) external hasAccount isApproved isNotActive onlyAccountManager {
-        tokenContract.safeTransferFrom(_msgSender(), address(this), nftId);
+        token.safeTransferFrom(_msgSender(), address(this), nftId);
         accounts[_msgSender()].active = true;
     }
 
     function deactivate(uint256 nftId) external hasActivatedAccount onlyAccountManager {
-        tokenContract.safeTransferFrom(address(this), _msgSender(), nftId);
+        token.safeTransferFrom(address(this), _msgSender(), nftId);
         accounts[_msgSender()].active = false;
     }
 
@@ -56,7 +56,7 @@ contract AccountRegistry is ERC721Holder, AccessControl, Ownable {
     }
 
     modifier hasEneptiToken() {
-        require(tokenContract.balanceOf(_msgSender()) > 0, "AccountRegistry: caller doesn't have any ENEPTI NFT token");
+        require(token.balanceOf(_msgSender()) > 0, "AccountRegistry: caller doesn't have any ENEPTI NFT token");
         _;
     }
 
@@ -72,7 +72,7 @@ contract AccountRegistry is ERC721Holder, AccessControl, Ownable {
 
     modifier isApproved() {
         require(
-            tokenContract.isApprovedForAll(_msgSender(), address(this)),
+            token.isApprovedForAll(_msgSender(), address(this)),
             "AccountRegistry: missing approval for the NFT transfer"
         );
         _;
