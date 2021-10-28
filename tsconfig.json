@@ -19,5 +19,12 @@
   },
   "exclude": ["node_modules"],
   "files": ["./hardhat.config.ts", "commitlint.config.ts"],
-  "include": ["tasks/**/*.ts", "test/**/*.ts", "typechain/**/*.d.ts", "typechain/**/*.ts"]
+  "include": [
+    "tasks/*.ts",
+    "tasks/**/*.ts",
+    "test/**/*.ts",
+    "scripts/**/*.ts",
+    "typechain/**/*.d.ts",
+    "typechain/**/*.ts"
+  ]
 }

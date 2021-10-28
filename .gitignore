@@ -19,6 +19,7 @@
 # files
 *.env
 *.log
+**/.DS_Store
 .pnp.*
 coverage.json
 npm-debug.log*
@@ -35,5 +36,4 @@ tasks/**/*.d.ts
 test/**/*.js
 test/**/*.d.ts
 
-# dapp tools
 /out

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./Interfaces/ISettings.sol";
+import "./interfaces/ISettings.sol";
 
 contract Settings is Ownable, ISettings {
     /// @notice the maximum auction length

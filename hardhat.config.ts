@@ -7,6 +7,7 @@ import "solidity-coverage";
 import "./tasks/accounts";
 // import "./tasks/clean";
 import "./tasks/deploy";
+import "./tasks/diamond/generateDiamondABI.ts";
 
 import { resolve } from "path";
 

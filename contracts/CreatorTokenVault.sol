@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 
-contract TokenVault is ERC20Upgradeable, ERC721HolderUpgradeable {
+contract CreatorTokenVault is ERC20Upgradeable, ERC721HolderUpgradeable {
     using Address for address;
 
     /// -----------------------------------
