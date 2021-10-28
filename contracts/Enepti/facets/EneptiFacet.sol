@@ -17,7 +17,7 @@ contract EneptiFacet {
     }
 
     function symbol() external pure returns (string memory) {
-        return "ENP";
+        return "ENEPTI";
     }
 
     function decimals() external pure returns (uint8) {

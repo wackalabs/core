@@ -1,76 +1,85 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.4;
+pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-
-/* solhint-disable max-line-length reason-string */
-contract BancorFormula {
-    using SafeMath for uint256;
-
-    uint16 public constant VERSION = 6;
+/**
+ * @title Power function by Bancor
+ * @dev https://github.com/bancorprotocol/contracts
+ *
+ * Modified from the original by Slava Balasanov & Tarrence van As
+ *
+ * Split Power.sol out from BancorFormula.sol
+ * https://github.com/bancorprotocol/contracts/blob/c9adc95e82fdfb3a0ada102514beb8ae00147f5d/solidity/contracts/converter/BancorFormula.sol
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more contributor license agreements;
+ * and to You under the Apache License, Version 2.0. "
+ */
+contract Power {
+    string public version = "0.3";
 
     uint256 private constant ONE = 1;
-    uint32 private constant MAX_RATIO = 1000000;
+    uint32 private constant MAX_WEIGHT = 1000000;
     uint8 private constant MIN_PRECISION = 32;
     uint8 private constant MAX_PRECISION = 127;
 
     /**
-     * @dev Auto-generated via 'PrintIntScalingFactors.py'
-     */
+      The values below depend on MAX_PRECISION. If you choose to change it:
+      Apply the same change in file 'PrintIntScalingFactors.py', run it and paste the results below.
+    */
     uint256 private constant FIXED_1 = 0x080000000000000000000000000000000;
     uint256 private constant FIXED_2 = 0x100000000000000000000000000000000;
     uint256 private constant MAX_NUM = 0x200000000000000000000000000000000;
 
     /**
-     * @dev Auto-generated via 'PrintLn2ScalingFactors.py'
-     */
+        Auto-generated via 'PrintLn2ScalingFactors.py'
+    */
     uint256 private constant LN2_NUMERATOR = 0x3f80fe03f80fe03f80fe03f80fe03f8;
     uint256 private constant LN2_DENOMINATOR = 0x5b9de1d10bf4103d647b0955897ba80;
 
     /**
-     * @dev Auto-generated via 'PrintFunctionOptimalLog.py' and 'PrintFunctionOptimalExp.py'
-     */
+        Auto-generated via 'PrintFunctionOptimalLog.py' and 'PrintFunctionOptimalExp.py'
+    */
     uint256 private constant OPT_LOG_MAX_VAL = 0x15bf0a8b1457695355fb8ac404e7a79e3;
     uint256 private constant OPT_EXP_MAX_VAL = 0x800000000000000000000000000000000;
 
     /**
-     * @dev Auto-generated via 'PrintFunctionConstructor.py'
-     */
+      The values below depend on MIN_PRECISION and MAX_PRECISION. If you choose to change either one of them:
+      Apply the same change in file 'PrintFunctionBancorFormula.py', run it and paste the results below.
+    */
     uint256[128] private maxExpArray;
 
     constructor() {
-        //  maxExpArray[  0] = 0x6bffffffffffffffffffffffffffffffff;
-        //  maxExpArray[  1] = 0x67ffffffffffffffffffffffffffffffff;
-        //  maxExpArray[  2] = 0x637fffffffffffffffffffffffffffffff;
-        //  maxExpArray[  3] = 0x5f6fffffffffffffffffffffffffffffff;
-        //  maxExpArray[  4] = 0x5b77ffffffffffffffffffffffffffffff;
-        //  maxExpArray[  5] = 0x57b3ffffffffffffffffffffffffffffff;
-        //  maxExpArray[  6] = 0x5419ffffffffffffffffffffffffffffff;
-        //  maxExpArray[  7] = 0x50a2ffffffffffffffffffffffffffffff;
-        //  maxExpArray[  8] = 0x4d517fffffffffffffffffffffffffffff;
-        //  maxExpArray[  9] = 0x4a233fffffffffffffffffffffffffffff;
-        //  maxExpArray[ 10] = 0x47165fffffffffffffffffffffffffffff;
-        //  maxExpArray[ 11] = 0x4429afffffffffffffffffffffffffffff;
-        //  maxExpArray[ 12] = 0x415bc7ffffffffffffffffffffffffffff;
-        //  maxExpArray[ 13] = 0x3eab73ffffffffffffffffffffffffffff;
-        //  maxExpArray[ 14] = 0x3c1771ffffffffffffffffffffffffffff;
-        //  maxExpArray[ 15] = 0x399e96ffffffffffffffffffffffffffff;
-        //  maxExpArray[ 16] = 0x373fc47fffffffffffffffffffffffffff;
-        //  maxExpArray[ 17] = 0x34f9e8ffffffffffffffffffffffffffff;
-        //  maxExpArray[ 18] = 0x32cbfd5fffffffffffffffffffffffffff;
-        //  maxExpArray[ 19] = 0x30b5057fffffffffffffffffffffffffff;
-        //  maxExpArray[ 20] = 0x2eb40f9fffffffffffffffffffffffffff;
-        //  maxExpArray[ 21] = 0x2cc8340fffffffffffffffffffffffffff;
-        //  maxExpArray[ 22] = 0x2af09481ffffffffffffffffffffffffff;
-        //  maxExpArray[ 23] = 0x292c5bddffffffffffffffffffffffffff;
-        //  maxExpArray[ 24] = 0x277abdcdffffffffffffffffffffffffff;
-        //  maxExpArray[ 25] = 0x25daf6657fffffffffffffffffffffffff;
-        //  maxExpArray[ 26] = 0x244c49c65fffffffffffffffffffffffff;
-        //  maxExpArray[ 27] = 0x22ce03cd5fffffffffffffffffffffffff;
-        //  maxExpArray[ 28] = 0x215f77c047ffffffffffffffffffffffff;
-        //  maxExpArray[ 29] = 0x1fffffffffffffffffffffffffffffffff;
-        //  maxExpArray[ 30] = 0x1eaefdbdabffffffffffffffffffffffff;
-        //  maxExpArray[ 31] = 0x1d6bd8b2ebffffffffffffffffffffffff;
+        //  maxExpArray[0] = 0x6bffffffffffffffffffffffffffffffff;
+        //  maxExpArray[1] = 0x67ffffffffffffffffffffffffffffffff;
+        //  maxExpArray[2] = 0x637fffffffffffffffffffffffffffffff;
+        //  maxExpArray[3] = 0x5f6fffffffffffffffffffffffffffffff;
+        //  maxExpArray[4] = 0x5b77ffffffffffffffffffffffffffffff;
+        //  maxExpArray[5] = 0x57b3ffffffffffffffffffffffffffffff;
+        //  maxExpArray[6] = 0x5419ffffffffffffffffffffffffffffff;
+        //  maxExpArray[7] = 0x50a2ffffffffffffffffffffffffffffff;
+        //  maxExpArray[8] = 0x4d517fffffffffffffffffffffffffffff;
+        //  maxExpArray[9] = 0x4a233fffffffffffffffffffffffffffff;
+        //  maxExpArray[10] = 0x47165fffffffffffffffffffffffffffff;
+        //  maxExpArray[11] = 0x4429afffffffffffffffffffffffffffff;
+        //  maxExpArray[12] = 0x415bc7ffffffffffffffffffffffffffff;
+        //  maxExpArray[13] = 0x3eab73ffffffffffffffffffffffffffff;
+        //  maxExpArray[14] = 0x3c1771ffffffffffffffffffffffffffff;
+        //  maxExpArray[15] = 0x399e96ffffffffffffffffffffffffffff;
+        //  maxExpArray[16] = 0x373fc47fffffffffffffffffffffffffff;
+        //  maxExpArray[17] = 0x34f9e8ffffffffffffffffffffffffffff;
+        //  maxExpArray[18] = 0x32cbfd5fffffffffffffffffffffffffff;
+        //  maxExpArray[19] = 0x30b5057fffffffffffffffffffffffffff;
+        //  maxExpArray[20] = 0x2eb40f9fffffffffffffffffffffffffff;
+        //  maxExpArray[21] = 0x2cc8340fffffffffffffffffffffffffff;
+        //  maxExpArray[22] = 0x2af09481ffffffffffffffffffffffffff;
+        //  maxExpArray[23] = 0x292c5bddffffffffffffffffffffffffff;
+        //  maxExpArray[24] = 0x277abdcdffffffffffffffffffffffffff;
+        //  maxExpArray[25] = 0x25daf6657fffffffffffffffffffffffff;
+        //  maxExpArray[26] = 0x244c49c65fffffffffffffffffffffffff;
+        //  maxExpArray[27] = 0x22ce03cd5fffffffffffffffffffffffff;
+        //  maxExpArray[28] = 0x215f77c047ffffffffffffffffffffffff;
+        //  maxExpArray[29] = 0x1fffffffffffffffffffffffffffffffff;
+        //  maxExpArray[30] = 0x1eaefdbdabffffffffffffffffffffffff;
+        //  maxExpArray[31] = 0x1d6bd8b2ebffffffffffffffffffffffff;
         maxExpArray[32] = 0x1c35fedd14ffffffffffffffffffffffff;
         maxExpArray[33] = 0x1b0ce43b323fffffffffffffffffffffff;
         maxExpArray[34] = 0x19f0028ec1ffffffffffffffffffffffff;
@@ -170,252 +179,29 @@ contract BancorFormula {
     }
 
     /**
-     * @dev given a token supply, reserve balance, ratio and a deposit amount (in the reserve token),
-     * calculates the return for a given conversion (in the main token)
-     *
-     * Formula:
-     * Return = _supply * ((1 + _depositAmount / _reserveBalance) ^ (_reserveRatio / 1000000) - 1)
-     *
-     * @param _supply              token total supply
-     * @param _reserveBalance      total reserve balance
-     * @param _reserveRatio        reserve ratio, represented in ppm, 1-1000000
-     * @param _depositAmount       deposit amount, in reserve token
-     *
-     * @return purchase return amount
-     */
-    function calculatePurchaseReturn(
-        uint256 _supply,
-        uint256 _reserveBalance,
-        uint32 _reserveRatio,
-        uint256 _depositAmount
-    ) public view returns (uint256) {
-        // validate input
-        require(
-            _supply > 0 && _reserveBalance > 0 && _reserveRatio > 0 && _reserveRatio <= MAX_RATIO,
-            "invalid parameters"
-        );
-
-        // special case for 0 deposit amount
-        if (_depositAmount == 0) return 0;
-
-        // special case if the ratio = 100%
-        if (_reserveRatio == MAX_RATIO) return _supply.mul(_depositAmount) / _reserveBalance;
-
-        uint256 result;
-        uint8 precision;
-        uint256 baseN = _depositAmount.add(_reserveBalance);
-        (result, precision) = power(baseN, _reserveBalance, _reserveRatio, MAX_RATIO);
-        uint256 temp = _supply.mul(result) >> precision;
-        return temp - _supply;
-    }
-
-    /**
-     * @dev given a token supply, reserve balance, ratio and a sell amount (in the main token),
-     * calculates the return for a given conversion (in the reserve token)
-     *
-     * Formula:
-     * Return = _reserveBalance * (1 - (1 - _sellAmount / _supply) ^ (1000000 / _reserveRatio))
-     *
-     * @param _supply              token total supply
-     * @param _reserveBalance      total reserve
-     * @param _reserveRatio        constant reserve Ratio, represented in ppm, 1-1000000
-     * @param _sellAmount          sell amount, in the token itself
-     *
-     * @return sale return amount
-     */
-    function calculateSaleReturn(
-        uint256 _supply,
-        uint256 _reserveBalance,
-        uint32 _reserveRatio,
-        uint256 _sellAmount
-    ) public view returns (uint256) {
-        // validate input
-        require(
-            _supply > 0 &&
-                _reserveBalance > 0 &&
-                _reserveRatio > 0 &&
-                _reserveRatio <= MAX_RATIO &&
-                _sellAmount <= _supply,
-            "invalid parameters"
-        );
-
-        // special case for 0 sell amount
-        if (_sellAmount == 0) return 0;
-
-        // special case for selling the entire supply
-        if (_sellAmount == _supply) return _reserveBalance;
-
-        // special case if the ratio = 100%
-        if (_reserveRatio == MAX_RATIO) return _reserveBalance.mul(_sellAmount) / _supply;
-
-        uint256 result;
-        uint8 precision;
-        uint256 baseD = _supply - _sellAmount;
-        (result, precision) = power(_supply, baseD, MAX_RATIO, _reserveRatio);
-        uint256 temp1 = _reserveBalance.mul(result);
-        uint256 temp2 = _reserveBalance << precision;
-        return (temp1 - temp2) / result;
-    }
-
-    /**
-     * @dev given two reserve balances/ratios and a sell amount (in the first reserve token),
-     * calculates the return for a conversion from the first reserve token to the second reserve token
-     * (in the second reserve token)
-     * note that prior to version 4, you should use 'calculateCrossConnectorReturn' instead
-     *
-     * Formula:
-     * Return = _toReserveBalance * (1 - (_fromReserveBalance /
-     *      (_fromReserveBalance + _amount)) ^ (_fromReserveRatio / _toReserveRatio))
-     *
-     * @param _fromReserveBalance      input reserve balance
-     * @param _fromReserveRatio        input reserve ratio, represented in ppm, 1-1000000
-     * @param _toReserveBalance        output reserve balance
-     * @param _toReserveRatio          output reserve ratio, represented in ppm, 1-1000000
-     * @param _amount                  input reserve amount
-     *
-     * @return second reserve amount
-     */
-    function calculateCrossReserveReturn(
-        uint256 _fromReserveBalance,
-        uint32 _fromReserveRatio,
-        uint256 _toReserveBalance,
-        uint32 _toReserveRatio,
-        uint256 _amount
-    ) public view returns (uint256) {
-        // validate input
-        require(
-            _fromReserveBalance > 0 &&
-                _fromReserveRatio > 0 &&
-                _fromReserveRatio <= MAX_RATIO &&
-                _toReserveBalance > 0 &&
-                _toReserveRatio > 0 &&
-                _toReserveRatio <= MAX_RATIO
-        );
-
-        // special case for equal ratios
-        if (_fromReserveRatio == _toReserveRatio)
-            return _toReserveBalance.mul(_amount) / _fromReserveBalance.add(_amount);
-
-        uint256 result;
-        uint8 precision;
-        uint256 baseN = _fromReserveBalance.add(_amount);
-        (result, precision) = power(baseN, _fromReserveBalance, _fromReserveRatio, _toReserveRatio);
-        uint256 temp1 = _toReserveBalance.mul(result);
-        uint256 temp2 = _toReserveBalance << precision;
-        return (temp1 - temp2) / result;
-    }
-
-    /**
-     * @dev given a smart token supply, reserve balance, total ratio and an amount of requested smart tokens,
-     * calculates the amount of reserve tokens required for purchasing the given amount of smart tokens
-     *
-     * Formula:
-     * Return = _reserveBalance * (((_supply + _amount) / _supply) ^ (MAX_RATIO / _totalRatio) - 1)
-     *
-     * @param _supply              smart token supply
-     * @param _reserveBalance      reserve token balance
-     * @param _totalRatio          total ratio, represented in ppm, 2-2000000
-     * @param _amount              requested amount of smart tokens
-     *
-     * @return amount of reserve tokens
-     */
-    function calculateFundCost(
-        uint256 _supply,
-        uint256 _reserveBalance,
-        uint32 _totalRatio,
-        uint256 _amount
-    ) public view returns (uint256) {
-        // validate input
-        require(_supply > 0 && _reserveBalance > 0 && _totalRatio > 1 && _totalRatio <= MAX_RATIO * 2);
-
-        // special case for 0 amount
-        if (_amount == 0) return 0;
-
-        // special case if the total ratio = 100%
-        if (_totalRatio == MAX_RATIO) return (_amount.mul(_reserveBalance) - 1) / _supply + 1;
-
-        uint256 result;
-        uint8 precision;
-        uint256 baseN = _supply.add(_amount);
-        (result, precision) = power(baseN, _supply, MAX_RATIO, _totalRatio);
-        uint256 temp = ((_reserveBalance.mul(result) - 1) >> precision) + 1;
-        return temp - _reserveBalance;
-    }
-
-    /**
-     * @dev given a smart token supply, reserve balance, total ratio and an amount of smart tokens to liquidate,
-     * calculates the amount of reserve tokens received for selling the given amount of smart tokens
-     *
-     * Formula:
-     * Return = _reserveBalance * (1 - ((_supply - _amount) / _supply) ^ (MAX_RATIO / _totalRatio))
-     *
-     * @param _supply              smart token supply
-     * @param _reserveBalance      reserve token balance
-     * @param _totalRatio          total ratio, represented in ppm, 2-2000000
-     * @param _amount              amount of smart tokens to liquidate
-     *
-     * @return amount of reserve tokens
-     */
-    function calculateLiquidateReturn(
-        uint256 _supply,
-        uint256 _reserveBalance,
-        uint32 _totalRatio,
-        uint256 _amount
-    ) public view returns (uint256) {
-        // validate input
-        require(
-            _supply > 0 && _reserveBalance > 0 && _totalRatio > 1 && _totalRatio <= MAX_RATIO * 2 && _amount <= _supply
-        );
-
-        // special case for 0 amount
-        if (_amount == 0) return 0;
-
-        // special case for liquidating the entire supply
-        if (_amount == _supply) return _reserveBalance;
-
-        // special case if the total ratio = 100%
-        if (_totalRatio == MAX_RATIO) return _amount.mul(_reserveBalance) / _supply;
-
-        uint256 result;
-        uint8 precision;
-        uint256 baseD = _supply - _amount;
-        (result, precision) = power(_supply, baseD, MAX_RATIO, _totalRatio);
-        uint256 temp1 = _reserveBalance.mul(result);
-        uint256 temp2 = _reserveBalance << precision;
-        return (temp1 - temp2) / result;
-    }
-
-    /**
-     * @dev General Description:
-     *     Determine a value of precision.
-     *     Calculate an integer approximation of (_baseN / _baseD) ^ (_expN / _expD) * 2 ^ precision.
-     *     Return the result along with the precision used.
-     *
-     * Detailed Description:
-     *     Instead of calculating "base ^ exp", we calculate "e ^ (log(base) * exp)".
-     *     The value of "log(base)" is represented with an integer slightly smaller than "log(base) * 2 ^ precision".
-     *     The larger "precision" is, the more accurately this value represents the real value.
-     *     However, the larger "precision" is, the more bits are required in order to store this value.
-     *     And the exponentiation function, which takes "x" and calculates "e ^ x",
-     *     is limited to a maximum exponent (maximum value of "x").
-     *     This maximum exponent depends on the "precision" used, and it is given by
-     *     "maxExpArray[precision] >> (MAX_PRECISION - precision)".
-     *     Hence we need to determine the highest precision which can be used for the given input,
-     *     before calling the exponentiation function.
-     *     This allows us to compute "base ^ exp" with maximum accuracy and without exceeding 256 bits
-     *     in any of the intermediate computations.
-     *     This functions assumes that "_expN < 2 ^ 256 / log(MAX_NUM - 1)", otherwise the multiplication
-     *     should be replaced with a "safeMul".
-     *     Since we rely on unsigned-integer arithmetic and "base < 1" ==> "log(base) < 0",
-     *     this function does not support "_baseN < _baseD".
-     */
+      General Description:
+          Determine a value of precision.
+          Calculate an integer approximation of (_baseN / _baseD) ^ (_expN / _expD) * 2 ^ precision.
+          Return the result along with the precision used.
+      Detailed Description:
+          Instead of calculating "base ^ exp", we calculate "e ^ (log(base) * exp)".
+          The value of "log(base)" is represented with an integer slightly smaller than "log(base) * 2 ^ precision".
+          The larger "precision" is, the more accurately this value represents the real value.
+          However, the larger "precision" is, the more bits are required in order to store this value.
+          And the exponentiation function, which takes "x" and calculates "e ^ x", is limited to a maximum exponent (maximum value of "x").
+          This maximum exponent depends on the "precision" used, and it is given by "maxExpArray[precision] >> (MAX_PRECISION - precision)".
+          Hence we need to determine the highest precision which can be used for the given input, before calling the exponentiation function.
+          This allows us to compute "base ^ exp" with maximum accuracy and without exceeding 256 bits in any of the intermediate computations.
+          This functions assumes that "_expN < 2 ^ 256 / log(MAX_NUM - 1)", otherwise the multiplication should be replaced with a "safeMul".
+    */
     function power(
         uint256 _baseN,
         uint256 _baseD,
         uint32 _expN,
         uint32 _expD
     ) internal view returns (uint256, uint8) {
-        require(_baseN < MAX_NUM);
+        require(_baseN < MAX_NUM, "baseN exceeds max value.");
+        require(_baseN >= _baseD, "Bases < 1 are not supported.");
 
         uint256 baseLog;
         uint256 base = (_baseN * FIXED_1) / _baseD;
@@ -435,11 +221,12 @@ contract BancorFormula {
     }
 
     /**
-     * @dev computes log(x / FIXED_1) * FIXED_1.
-     * This functions assumes that "x >= FIXED_1", because the output would be negative otherwise.
-     */
-    function generalLog(uint256 x) internal pure returns (uint256) {
+        Compute log(x / FIXED_1) * FIXED_1.
+        This functions assumes that "x >= FIXED_1", because the output would be negative otherwise.
+    */
+    function generalLog(uint256 _x) internal pure returns (uint256) {
         uint256 res = 0;
+        uint256 x = _x;
 
         // If x >= 2, then we compute the integer part of log2(x), which is larger than 0.
         if (x >= FIXED_2) {
@@ -463,22 +250,23 @@ contract BancorFormula {
     }
 
     /**
-     * @dev computes the largest integer smaller than or equal to the binary logarithm of the input.
-     */
+      Compute the largest integer smaller than or equal to the binary logarithm of the input.
+    */
     function floorLog2(uint256 _n) internal pure returns (uint8) {
         uint8 res = 0;
+        uint256 n = _n;
 
-        if (_n < 256) {
+        if (n < 256) {
             // At most 8 iterations
-            while (_n > 1) {
-                _n >>= 1;
+            while (n > 1) {
+                n >>= 1;
                 res += 1;
             }
         } else {
             // Exactly 8 iterations
             for (uint8 s = 128; s > 0; s >>= 1) {
-                if (_n >= (ONE << s)) {
-                    _n >>= s;
+                if (n >= (ONE << s)) {
+                    n >>= s;
                     res |= s;
                 }
             }
@@ -488,11 +276,10 @@ contract BancorFormula {
     }
 
     /**
-     * @dev the global "maxExpArray" is sorted in descending order,
-     *      and therefore the following statements are equivalent:
-     * - This function finds the position of [the smallest value in "maxExpArray" larger than or equal to "x"]
-     * - This function finds the highest position of [a value in "maxExpArray" larger than or equal to "x"]
-     */
+        The global "maxExpArray" is sorted in descending order, and therefore the following statements are equivalent:
+        - This function finds the position of [the smallest value in "maxExpArray" larger than or equal to "x"]
+        - This function finds the highest position of [a value in "maxExpArray" larger than or equal to "x"]
+    */
     function findPositionInMaxExpArray(uint256 _x) internal view returns (uint8) {
         uint8 lo = MIN_PRECISION;
         uint8 hi = MAX_PRECISION;
@@ -506,18 +293,18 @@ contract BancorFormula {
         if (maxExpArray[hi] >= _x) return hi;
         if (maxExpArray[lo] >= _x) return lo;
 
-        require(false);
+        assert(false);
         return 0;
     }
 
+    /* solhint-disable */
     /**
-     * @dev this function can be auto-generated by the script 'PrintFunctionGeneralExp.py'.
-     * it approximates "e ^ x" via maclaurin summation: "(x^0)/0! + (x^1)/1! + ... + (x^n)/n!".
-     * it returns "e ^ (x / 2 ^ precision) * 2 ^ precision", that is, the result is upshifted for accuracy.
-     * the global "maxExpArray" maps each "precision" to "((maximumExponent + 1) << (MAX_PRECISION - precision)) - 1".
-     * the maximum permitted value for "x" is therefore given by
-     * "maxExpArray[precision] >> (MAX_PRECISION - precision)".
-     */
+        This function can be auto-generated by the script 'PrintFunctionGeneralExp.py'.
+        It approximates "e ^ x" via maclaurin summation: "(x^0)/0! + (x^1)/1! + ... + (x^n)/n!".
+        It returns "e ^ (x / 2 ^ precision) * 2 ^ precision", that is, the result is upshifted for accuracy.
+        The global "maxExpArray" maps each "precision" to "((maximumExponent + 1) << (MAX_PRECISION - precision)) - 1".
+        The maximum permitted value for "x" is therefore given by "maxExpArray[precision] >> (MAX_PRECISION - precision)".
+    */
     function generalExp(uint256 _x, uint8 _precision) internal pure returns (uint256) {
         uint256 xi = _x;
         uint256 res = 0;
@@ -587,21 +374,14 @@ contract BancorFormula {
         xi = (xi * _x) >> _precision;
         res += xi * 0x0000000000000000000000000000001; // add x^33 * (33! / 33!)
 
-        // divide by 33! and then add x^1 / 1! + x^0 / 0!
-        return res / 0x688589cc0e9505e2f2fee5580000000 + _x + (ONE << _precision);
+        return res / 0x688589cc0e9505e2f2fee5580000000 + _x + (ONE << _precision); // divide by 33! and then add x^1 / 1! + x^0 / 0!
     }
 
     /**
-     * @dev computes log(x / FIXED_1) * FIXED_1
-     * Input range: FIXED_1 <= x <= LOG_EXP_MAX_VAL - 1
-     * Auto-generated via 'PrintFunctionOptimalLog.py'
-     * Detailed description:
-     * - Rewrite the input as a product of natural exponents and a single residual r, such that 1 < r < 2
-     * - The natural logarithm of each (pre-calculated) exponent is the degree of the exponent
-     * - The natural logarithm of r is calculated via Taylor series for log(1 + x), where x = r - 1
-     * - The natural logarithm of the input is calculated by summing up the intermediate results above
-     * - For example: log(250) = log(e^4 * e^1 * e^0.5 * 1.021692859) = 4 + 1 + 0.5 + log(1 + 0.021692859)
-     */
+        Return log(x / FIXED_1) * FIXED_1
+        Input range: FIXED_1 <= x <= LOG_EXP_MAX_VAL - 1
+        Auto-generated via 'PrintFunctionOptimalLog.py'
+    */
     function optimalLog(uint256 x) internal pure returns (uint256) {
         uint256 res = 0;
 
@@ -612,77 +392,69 @@ contract BancorFormula {
         if (x >= 0xd3094c70f034de4b96ff7d5b6f99fcd8) {
             res += 0x40000000000000000000000000000000;
             x = (x * FIXED_1) / 0xd3094c70f034de4b96ff7d5b6f99fcd8;
-        } // add 1 / 2^1
+        }
         if (x >= 0xa45af1e1f40c333b3de1db4dd55f29a7) {
             res += 0x20000000000000000000000000000000;
             x = (x * FIXED_1) / 0xa45af1e1f40c333b3de1db4dd55f29a7;
-        } // add 1 / 2^2
+        }
         if (x >= 0x910b022db7ae67ce76b441c27035c6a1) {
             res += 0x10000000000000000000000000000000;
             x = (x * FIXED_1) / 0x910b022db7ae67ce76b441c27035c6a1;
-        } // add 1 / 2^3
+        }
         if (x >= 0x88415abbe9a76bead8d00cf112e4d4a8) {
             res += 0x08000000000000000000000000000000;
             x = (x * FIXED_1) / 0x88415abbe9a76bead8d00cf112e4d4a8;
-        } // add 1 / 2^4
+        }
         if (x >= 0x84102b00893f64c705e841d5d4064bd3) {
             res += 0x04000000000000000000000000000000;
             x = (x * FIXED_1) / 0x84102b00893f64c705e841d5d4064bd3;
-        } // add 1 / 2^5
+        }
         if (x >= 0x8204055aaef1c8bd5c3259f4822735a2) {
             res += 0x02000000000000000000000000000000;
             x = (x * FIXED_1) / 0x8204055aaef1c8bd5c3259f4822735a2;
-        } // add 1 / 2^6
+        }
         if (x >= 0x810100ab00222d861931c15e39b44e99) {
             res += 0x01000000000000000000000000000000;
             x = (x * FIXED_1) / 0x810100ab00222d861931c15e39b44e99;
-        } // add 1 / 2^7
+        }
         if (x >= 0x808040155aabbbe9451521693554f733) {
             res += 0x00800000000000000000000000000000;
             x = (x * FIXED_1) / 0x808040155aabbbe9451521693554f733;
-        } // add 1 / 2^8
+        }
 
         z = y = x - FIXED_1;
         w = (y * y) / FIXED_1;
         res += (z * (0x100000000000000000000000000000000 - y)) / 0x100000000000000000000000000000000;
-        z = (z * w) / FIXED_1; // add y^01 / 01 - y^02 / 02
+        z = (z * w) / FIXED_1;
         res += (z * (0x0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa - y)) / 0x200000000000000000000000000000000;
-        z = (z * w) / FIXED_1; // add y^03 / 03 - y^04 / 04
+        z = (z * w) / FIXED_1;
         res += (z * (0x099999999999999999999999999999999 - y)) / 0x300000000000000000000000000000000;
-        z = (z * w) / FIXED_1; // add y^05 / 05 - y^06 / 06
+        z = (z * w) / FIXED_1;
         res += (z * (0x092492492492492492492492492492492 - y)) / 0x400000000000000000000000000000000;
-        z = (z * w) / FIXED_1; // add y^07 / 07 - y^08 / 08
+        z = (z * w) / FIXED_1;
         res += (z * (0x08e38e38e38e38e38e38e38e38e38e38e - y)) / 0x500000000000000000000000000000000;
-        z = (z * w) / FIXED_1; // add y^09 / 09 - y^10 / 10
+        z = (z * w) / FIXED_1;
         res += (z * (0x08ba2e8ba2e8ba2e8ba2e8ba2e8ba2e8b - y)) / 0x600000000000000000000000000000000;
-        z = (z * w) / FIXED_1; // add y^11 / 11 - y^12 / 12
+        z = (z * w) / FIXED_1;
         res += (z * (0x089d89d89d89d89d89d89d89d89d89d89 - y)) / 0x700000000000000000000000000000000;
-        z = (z * w) / FIXED_1; // add y^13 / 13 - y^14 / 14
-
-        // add y^15 / 15 - y^16 / 16
+        z = (z * w) / FIXED_1;
         res += (z * (0x088888888888888888888888888888888 - y)) / 0x800000000000000000000000000000000;
 
         return res;
     }
 
     /**
-     * @dev computes e ^ (x / FIXED_1) * FIXED_1
-     * input range: 0 <= x <= OPT_EXP_MAX_VAL - 1
-     * auto-generated via 'PrintFunctionOptimalExp.py'
-     * Detailed description:
-     * - Rewrite the input as a sum of binary exponents and a single residual r, as small as possible
-     * - The exponentiation of each binary exponent is given (pre-calculated)
-     * - The exponentiation of r is calculated via Taylor series for e^x, where x = r
-     * - The exponentiation of the input is calculated by multiplying the intermediate results above
-     * - For example: e^5.521692859 = e^(4 + 1 + 0.5 + 0.021692859) = e^4 * e^1 * e^0.5 * e^0.021692859
-     */
+        Return e ^ (x / FIXED_1) * FIXED_1
+        Input range: 0 <= x <= OPT_EXP_MAX_VAL - 1
+        Auto-generated via 'PrintFunctionOptimalExp.py'
+    */
     function optimalExp(uint256 x) internal pure returns (uint256) {
         uint256 res = 0;
 
         uint256 y;
         uint256 z;
 
-        z = y = x % 0x10000000000000000000000000000000; // get the input modulo 2^(-3)
+        z = y = x % 0x10000000000000000000000000000000;
         z = (z * y) / FIXED_1;
         res += z * 0x10e1b3be415a0000; // add y^02 * (20! / 02!)
         z = (z * y) / FIXED_1;
@@ -724,40 +496,21 @@ contract BancorFormula {
         res = res / 0x21c3677c82b40000 + y + FIXED_1; // divide by 20! and then add y^1 / 1! + y^0 / 0!
 
         if ((x & 0x010000000000000000000000000000000) != 0)
-            res = (res * 0x1c3d6a24ed82218787d624d3e5eba95f9) / 0x18ebef9eac820ae8682b9793ac6d1e776; // multiply by e^2^(-3)
+            res = (res * 0x1c3d6a24ed82218787d624d3e5eba95f9) / 0x18ebef9eac820ae8682b9793ac6d1e776;
         if ((x & 0x020000000000000000000000000000000) != 0)
-            res = (res * 0x18ebef9eac820ae8682b9793ac6d1e778) / 0x1368b2fc6f9609fe7aceb46aa619baed4; // multiply by e^2^(-2)
+            res = (res * 0x18ebef9eac820ae8682b9793ac6d1e778) / 0x1368b2fc6f9609fe7aceb46aa619baed4;
         if ((x & 0x040000000000000000000000000000000) != 0)
-            res = (res * 0x1368b2fc6f9609fe7aceb46aa619baed5) / 0x0bc5ab1b16779be3575bd8f0520a9f21f; // multiply by e^2^(-1)
+            res = (res * 0x1368b2fc6f9609fe7aceb46aa619baed5) / 0x0bc5ab1b16779be3575bd8f0520a9f21f;
         if ((x & 0x080000000000000000000000000000000) != 0)
-            res = (res * 0x0bc5ab1b16779be3575bd8f0520a9f21e) / 0x0454aaa8efe072e7f6ddbab84b40a55c9; // multiply by e^2^(+0)
+            res = (res * 0x0bc5ab1b16779be3575bd8f0520a9f21e) / 0x0454aaa8efe072e7f6ddbab84b40a55c9;
         if ((x & 0x100000000000000000000000000000000) != 0)
-            res = (res * 0x0454aaa8efe072e7f6ddbab84b40a55c5) / 0x00960aadc109e7a3bf4578099615711ea; // multiply by e^2^(+1)
+            res = (res * 0x0454aaa8efe072e7f6ddbab84b40a55c5) / 0x00960aadc109e7a3bf4578099615711ea;
         if ((x & 0x200000000000000000000000000000000) != 0)
-            res = (res * 0x00960aadc109e7a3bf4578099615711d7) / 0x0002bf84208204f5977f9a8cf01fdce3d; // multiply by e^2^(+2)
+            res = (res * 0x00960aadc109e7a3bf4578099615711d7) / 0x0002bf84208204f5977f9a8cf01fdce3d;
         if ((x & 0x400000000000000000000000000000000) != 0)
-            res = (res * 0x0002bf84208204f5977f9a8cf01fdc307) / 0x0000003c6ab775dd0b95b4cbee7e65d11; // multiply by e^2^(+3)
+            res = (res * 0x0002bf84208204f5977f9a8cf01fdc307) / 0x0000003c6ab775dd0b95b4cbee7e65d11;
 
         return res;
     }
-
-    /**
-     * @dev deprecated, backward compatibility
-     */
-    function calculateCrossConnectorReturn(
-        uint256 _fromConnectorBalance,
-        uint32 _fromConnectorWeight,
-        uint256 _toConnectorBalance,
-        uint32 _toConnectorWeight,
-        uint256 _amount
-    ) public view returns (uint256) {
-        return
-            calculateCrossReserveReturn(
-                _fromConnectorBalance,
-                _fromConnectorWeight,
-                _toConnectorBalance,
-                _toConnectorWeight,
-                _amount
-            );
-    }
+    /* solhint-enable */
 }
