@@ -8,7 +8,7 @@ import { shouldBehaveLikeSocialToken } from "./SocialToken.behavior";
 
 const { deployContract } = hre.waffle;
 
-describe("Unit tests", function () {
+describe("SocialToken", function () {
   before(async function () {
     this.signers = {} as Signers;
 
@@ -16,7 +16,7 @@ describe("Unit tests", function () {
     this.signers.admin = signers[0];
   });
 
-  describe("SocialToken", function () {
+  describe("Deploy social token contract", function () {
     beforeEach(async function () {
       const lmnTokenArtifact: Artifact = await hre.artifacts.readArtifact("LMNToken");
       this.lmnToken = <LMNToken>await deployContract(this.signers.admin, lmnTokenArtifact);
