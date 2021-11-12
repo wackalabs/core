@@ -110,8 +110,8 @@ describe("LazyERC721", function () {
         redeemer: _redeemer,
         minter: _minter,
       } = await deploy();
-      contract = _contract;
-      redeemerContract = _redeemerContract;
+      contract = <LazyERC721>_contract;
+      redeemerContract = <LazyERC721>_redeemerContract;
       redeemer = _redeemer;
       minter = _minter;
       voucher = await createVoucher(
@@ -234,9 +234,10 @@ describe("LazyERC721", function () {
       );
 
       // the payment should be sent from the redeemer's account to the contract address
-      await expect(
-        await redeemerContract.redeem(redeemer.address, voucher, { value: minPrice }),
-      ).to.changeEtherBalances([redeemer, contract], [minPrice.mul(-1), minPrice]);
+      await expect(await redeemerContract.redeem(redeemer.address, voucher, { value: minPrice })).to.changeEtherBalance(
+        redeemer,
+        minPrice.mul(-1),
+      );
 
       // minter should have funds available to withdraw
       expect(await contract.availableToWithdraw()).to.equal(minPrice);

@@ -10,21 +10,15 @@
     "outDir": "build",
     "module": "commonjs",
     "moduleResolution": "node",
-    "noImplicitAny": true,
+    "noImplicitAny": false,
+    "skipLibCheck": true,
     "removeComments": true,
     "resolveJsonModule": true,
     "sourceMap": false,
     "strict": true,
     "target": "es6"
   },
-  "exclude": ["node_modules"],
   "files": ["./hardhat.config.ts", "commitlint.config.ts"],
-  "include": [
-    "tasks/*.ts",
-    "tasks/**/*.ts",
-    "test/**/*.ts",
-    "scripts/**/*.ts",
-    "typechain/**/*.d.ts",
-    "typechain/**/*.ts"
-  ]
+  "include": ["tasks/*.ts", "tasks/**/*.ts", "test/**/*.ts", "scripts/**/*.ts", "merkle-tree/**/*.ts"],
+  "exclude": ["node_modules"]
 }
