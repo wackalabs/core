@@ -1,4 +1,4 @@
-import { BigNumber } from "@ethersproject/contracts/node_modules/@ethersproject/bignumber";
+import { BigNumber } from "@ethersproject/bignumber";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 
 import { expect } from "chai";

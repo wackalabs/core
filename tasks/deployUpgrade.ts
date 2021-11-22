@@ -111,7 +111,7 @@ task("deployUpgrade", "Deploys a Diamond Cut, given an address, facets and addSe
     }
 
     //Create the cut
-    const deployedFacets = [];
+    const deployedFacets: Contract[] = [];
     const cut: Cut[] = [];
 
     for (let index = 0; index < facetsAndAddSelectors.length; index++) {
@@ -130,7 +130,7 @@ task("deployUpgrade", "Deploys a Diamond Cut, given an address, facets and addSe
       const newSelectors = getSighashes(facet.addSelectors, hre.ethers);
       const removeSelectors = getSighashes(facet.removeSelectors, hre.ethers);
 
-      let existingFuncs = getSelectors(deployedFacet);
+      const existingFuncs = getSelectors(deployedFacet);
       for (const selector of newSelectors) {
         if (!existingFuncs.includes(selector)) {
           const index = newSelectors.findIndex(val => val == selector);

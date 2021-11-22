@@ -2,7 +2,7 @@ import { LedgerSigner } from "@ethersproject/hardware-wallets";
 import { task } from "hardhat/config";
 import { ContractReceipt, ContractTransaction } from "@ethersproject/contracts";
 import { Signer } from "@ethersproject/abstract-signer";
-import { ItemsTransferFacet } from "../typechain";
+// import { ItemsTransferFacet } from "../typechain";
 import { gasPrice, maticDiamondAddress } from "../scripts/helperFunctions";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
@@ -55,9 +55,7 @@ task("batchDeposit", "Allows the batch deposit of ERC1155 to multiple ERC721 tok
       throw Error("Incorrect network selected");
     }
 
-    const itemsTransfer = (await hre.ethers.getContractAt("ItemsTransferFacet", diamondAddress)).connect(
-      signer,
-    ) as ItemsTransferFacet;
+    const itemsTransfer = (await hre.ethers.getContractAt("ItemsTransferFacet", diamondAddress)).connect(signer);
     const uniqueIds: string[] = removeDuplicates(gotchiIDs);
     console.log("Batch Depositing", quantity, "items of itemId", itemId, "to", uniqueIds.length, "gotchis");
     // let eachGotchi: number[] = Array(1).fill(itemId);
@@ -71,7 +69,7 @@ task("batchDeposit", "Allows the batch deposit of ERC1155 to multiple ERC721 tok
       { gasPrice: gasPrice },
     );
     console.log("tx:", tx.hash);
-    let receipt: ContractReceipt = await tx.wait();
+    const receipt: ContractReceipt = await tx.wait();
     // console.log("Gas used:", strDisplay(receipt.gasUsed.toString()));
     if (!receipt.status) {
       throw Error(`Error:: ${tx.hash}`);

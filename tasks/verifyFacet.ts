@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import axios from "axios";
 import fs from "fs";
 import { task } from "hardhat/config";
+import { URLSearchParams } from "url";
 
 const addresses: string[] = [];
 
@@ -29,7 +31,7 @@ function verifyRequest(guid: string, apikey: string, apiUrl: string) {
         console.log("Verified Successfully");
       } else {
         if (response.data.result == "Pending in queue") {
-          return new Promise((resolve, reject) => {
+          return new Promise(resolve => {
             setTimeout(() => {
               resolve(verifyRequest(guid, apikey, apiUrl));
             }, 5000);
@@ -56,9 +58,9 @@ task("verifyFacet", "Generates ABI file for diamond, includes all ABIs of facets
     const file = taskArgs.facet;
     const directory = taskArgs.directory;
     const apiURL = taskArgs.apiURL;
-    let contractname = file; // `contracts/Aavegotchi/facets/${file}.sol:${file}`; // file
+    const contractname = file; // `contracts/Aavegotchi/facets/${file}.sol:${file}`; // file
 
-    let sourceCode = null;
+    let sourceCode: string | null = null;
     const flatFile = `./flat/${file}.sol.flat`;
     if (noFlatten) {
       console.log("No Flatten");
@@ -75,19 +77,20 @@ task("verifyFacet", "Generates ABI file for diamond, includes all ABIs of facets
       sourceCode = await run("flatten:get-flattened-sources", {
         files: [`./contracts/${directory}/facets/${file}.sol`],
       });
-    }
-    sourceCode = sourceCode.replace("// SPDX-License-Identifier: MIT", "licenseindicator");
-    sourceCode = sourceCode.replace(/\/\/ SPDX\-License\-Identifier\: MIT/g, "");
-    sourceCode = sourceCode.replace("licenseindicator", "// SPDX-License-Identifier: MIT");
+    } else {
+      sourceCode = sourceCode.replace("// SPDX-License-Identifier: MIT", "licenseindicator");
+      sourceCode = sourceCode.replace(/\/\/ SPDX-License-Identifier: MIT/g, "");
+      sourceCode = sourceCode.replace("licenseindicator", "// SPDX-License-Identifier: MIT");
 
-    sourceCode = sourceCode.replace("pragma solidity >=0.8.4;", "solidityindicator");
-    sourceCode = sourceCode.replace(/pragma solidity 0\.8\.1\;/g, "");
-    sourceCode = sourceCode.replace("solidityindicator", "pragma solidity >=0.8.4;");
+      sourceCode = sourceCode.replace("pragma solidity >=0.8.4;", "solidityindicator");
+      sourceCode = sourceCode.replace(/pragma solidity 0\.8\.1;/g, "");
+      sourceCode = sourceCode.replace("solidityindicator", "pragma solidity >=0.8.4;");
 
-    try {
-      fs.writeFileSync(flatFile, sourceCode);
-    } catch (err) {
-      console.log("Writing Flattened Source Code Failed");
+      try {
+        fs.writeFileSync(flatFile, sourceCode);
+      } catch (err) {
+        console.log("Writing Flattened Source Code Failed");
+      }
     }
 
     const compilerversion = getCompilerVersion();
