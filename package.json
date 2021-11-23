@@ -1,7 +1,7 @@
 {
   "name": "@enepti/core",
   "description": "Enepti Network core smart contracts",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": {
     "name": "Enepti Network",
     "url": "https://enepti.com"
@@ -104,7 +104,7 @@
     "lint": "yarn lint:sol && yarn lint:ts && yarn prettier:check",
     "lint:sol": "solhint --config ./.solhint.json --max-warnings 0 \"contracts/**/*.sol\"",
     "lint:ts": "eslint --config ./.eslintrc.yaml --ignore-path ./.eslintignore --ext .js,.ts .",
-    "postinstall": "node -e \"if(require('fs').existsSync('.git')){process.exit(1)}\" || husky install",
+    "_postinstall": "node -e \"if(require('fs').existsSync('.git')){process.exit(1)}\" || husky install",
     "postpublish": "pinst --enable",
     "prepublishOnly": "pinst --disable",
     "prettier": "prettier --config ./.prettierrc.yaml --write \"**/*.{js,json,md,sol,ts}\"",
