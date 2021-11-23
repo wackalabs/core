@@ -104,7 +104,7 @@
     "lint": "yarn lint:sol && yarn lint:ts && yarn prettier:check",
     "lint:sol": "solhint --config ./.solhint.json --max-warnings 0 \"contracts/**/*.sol\"",
     "lint:ts": "eslint --config ./.eslintrc.yaml --ignore-path ./.eslintignore --ext .js,.ts .",
-    "_postinstall": "node -e \"if(require('fs').existsSync('.git')){process.exit(1)}\" || husky install",
+    "postinstall": "node -e \"if(require('fs').existsSync('.git')){process.exit(1)}\" || husky install",
     "postpublish": "pinst --enable",
     "prepublishOnly": "pinst --disable",
     "prettier": "prettier --config ./.prettierrc.yaml --write \"**/*.{js,json,md,sol,ts}\"",

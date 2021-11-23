@@ -2,6 +2,7 @@ import "./AccountRegistry";
 import "./BancorFormula";
 import "./EneptiAccount";
 import "./EneptiToken";
+import "./Erc20ConditionalErc721";
 import "./ERC721TokenVault";
 import "./ERC721VaultFactory";
 import "./InitializeProxy";
@@ -12,7 +13,6 @@ import "./RoomBase";
 
 import { task } from "hardhat/config";
 import { EneptiAccount, EneptiToken, LMNToken } from "../../typechain";
-
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -56,6 +56,14 @@ task("deploy", "Deploy all contracts", async (taskArgs, hre) => {
     name: "token_name",
     symbol: "token_symbol",
     creator: accounts[1].address,
+  });
+  await sleep(1000);
+
+  await hre.run("deployErc20ConditionalErc721", {
+    conditionERC20: (lmnToken as LMNToken).address,
+    conditionBalance: "1.0",
+    name: "Erc20ConditionalErc721",
+    symbol: "E20CE721",
   });
   await sleep(1000);
 });
