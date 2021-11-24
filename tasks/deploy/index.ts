@@ -3,6 +3,7 @@ import "./BancorFormula";
 import "./EneptiAccount";
 import "./EneptiToken";
 import "./Erc20ConditionalErc721";
+import "./Erc721ConditionalErc721";
 import "./ERC721TokenVault";
 import "./ERC721VaultFactory";
 import "./InitializeProxy";
@@ -64,6 +65,13 @@ task("deploy", "Deploy all contracts", async (taskArgs, hre) => {
     conditionBalance: "1.0",
     name: "Erc20ConditionalErc721",
     symbol: "E20CE721",
+  });
+  await sleep(1000);
+
+  await hre.run("deployErc721ConditionalErc721", {
+    conditionNFT: (eneptiToken as EneptiToken).address,
+    name: "Erc721ConditionalErc721",
+    symbol: "E721CE721",
   });
   await sleep(1000);
 });
