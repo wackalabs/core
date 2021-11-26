@@ -22,14 +22,9 @@ interface ILazyERC721 {
     }
 
     /// @notice Redeems an NFTVoucher for an actual NFT, creating it in the process.
-    /// @param redeemer The address of the account which will receive the NFT upon success.
     /// @param voucher A signed NFTVoucher that describes the NFT to be redeemed.
     /// @param redeemPrice price submitted by the redeemer in CreatorToken ERC20.
-    function redeem(
-        address redeemer,
-        NFTVoucher calldata voucher,
-        uint256 redeemPrice
-    ) external payable returns (uint256);
+    function redeem(NFTVoucher calldata voucher, uint256 redeemPrice) external returns (uint256);
 
     /// @notice Transfers all pending withdrawal balance to the caller. Reverts if the caller is not an authorized minter.
     function withdraw() external;
