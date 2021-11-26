@@ -3,7 +3,6 @@ pragma solidity ^0.8.4;
 pragma abicoder v2; // required to accept structs as function parameters
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -12,21 +11,16 @@ import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "./LazyERC721.sol";
 
 contract LazyEthNFT is LazyERC721 {
-    ERC20 public creatorToken;
-
     constructor(
+        address payable minter,
         string memory name,
         string memory symbol,
-        string memory version,
-        ERC20 _creatorToken
-    ) LazyERC721(payable(msg.sender), name, symbol, version) {
-        creatorToken = _creatorToken;
-    }
+        string memory version
+    ) LazyERC721(payable(msg.sender), name, symbol, version) {}
 
     /// @notice Redeems an NFTVoucher for an actual NFT, creating it in the process.
     /// @param redeemer The address of the account which will receive the NFT upon success.
     /// @param voucher A signed NFTVoucher that describes the NFT to be redeemed.
-    /// @param redeemPrice price submitted by the redeemer in CreatorToken ERC20.
     function redeem(
         address redeemer,
         NFTVoucher calldata voucher,
@@ -38,14 +32,8 @@ contract LazyEthNFT is LazyERC721 {
         // make sure that the signer is authorized to mint NFTs
         require(hasRole(MINTER_ROLE, signer), "Signature invalid or unauthorized");
 
-        // make sure that the redeemer has enough balance of creator token to pay with
-        require(creatorToken.balanceOf(msg.sender) >= redeemPrice, "Insufficient balance to redeem");
-
         // make sure that the redeemer is paying enough to cover the buyer's cost
-        require(redeemPrice >= voucher.minPrice, "Redeem price too low");
-
-        // transfer redeem payment to the contract
-        creatorToken.transferFrom(msg.sender, address(this), redeemPrice);
+        require(msg.value >= voucher.minPrice, "Insufficient funds to redeem");
 
         // first assign the token to the signer, to establish provenance on-chain
         _mint(signer, voucher.tokenId);
@@ -55,18 +43,21 @@ contract LazyEthNFT is LazyERC721 {
         _transfer(signer, redeemer, voucher.tokenId);
 
         // record payment to signer's withdrawal balance
-        pendingWithdrawals[signer] += redeemPrice;
+        pendingWithdrawals[signer] += msg.value;
 
         return voucher.tokenId;
     }
 
     /// @notice Transfers all pending withdrawal balance to the caller. Reverts if the caller is not an authorized minter.
-    function withdraw() public override {
+    function withdraw() external override {
         require(hasRole(MINTER_ROLE, msg.sender), "Only authorized minters can withdraw");
 
-        uint256 amount = pendingWithdrawals[msg.sender];
+        // IMPORTANT: casting msg.sender to a payable address is only safe if ALL members of the minter role are payable addresses.
+        address payable receiver = payable(msg.sender);
+
+        uint256 amount = pendingWithdrawals[receiver];
         // zero account before transfer to prevent re-entrancy attack
-        pendingWithdrawals[msg.sender] = 0;
-        creatorToken.transferFrom(address(this), msg.sender, amount);
+        pendingWithdrawals[receiver] = 0;
+        receiver.transfer(amount);
     }
 }

@@ -49,7 +49,7 @@ contract Erc20ConditionalErc721 is ERC165, ERC721 {
         hasMinted[_tokenId] = true;
     }
 
-    function tokenURI(uint256 _tokenId) public pure override returns (string memory) {
+    function tokenURI(uint256 _tokenId) public view virtual override returns (string memory) {
         return
             string(
                 abi.encodePacked(
@@ -67,11 +67,11 @@ contract Erc20ConditionalErc721 is ERC165, ERC721 {
         return size > 0;
     }
 
-    function balanceOf(address _owner) public view override returns (uint256) {
+    function balanceOf(address _owner) public view virtual override returns (uint256) {
         return balances[_owner];
     }
 
-    function ownerOf(uint256 _tokenId) public view override returns (address) {
+    function ownerOf(uint256 _tokenId) public view virtual override returns (address) {
         return owner[_tokenId];
     }
 
@@ -80,7 +80,7 @@ contract Erc20ConditionalErc721 is ERC165, ERC721 {
         address _to,
         uint256 _tokenId,
         bytes memory data
-    ) public override {
+    ) public virtual override {
         require(
             msg.sender == owner[_tokenId] ||
                 approved[_tokenId] == msg.sender ||
@@ -113,7 +113,7 @@ contract Erc20ConditionalErc721 is ERC165, ERC721 {
         address _from,
         address _to,
         uint256 _tokenId
-    ) public override {
+    ) public virtual override {
         require(
             msg.sender == owner[_tokenId] ||
                 approved[_tokenId] == msg.sender ||
@@ -146,7 +146,7 @@ contract Erc20ConditionalErc721 is ERC165, ERC721 {
         address _from,
         address _to,
         uint256 _tokenId
-    ) public override {
+    ) public virtual override {
         require(
             msg.sender == owner[_tokenId] ||
                 approved[_tokenId] == msg.sender ||
@@ -163,7 +163,7 @@ contract Erc20ConditionalErc721 is ERC165, ERC721 {
         owner[_tokenId] = _to;
     }
 
-    function approve(address _approved, uint256 _tokenId) public override {
+    function approve(address _approved, uint256 _tokenId) public virtual override {
         require(
             msg.sender == owner[_tokenId] ||
                 approved[_tokenId] == msg.sender ||
@@ -174,20 +174,20 @@ contract Erc20ConditionalErc721 is ERC165, ERC721 {
         approved[_tokenId] = _approved;
     }
 
-    function setApprovalForAll(address _operator, bool _approved) public override {
+    function setApprovalForAll(address _operator, bool _approved) public virtual override {
         emit ApprovalForAll(msg.sender, _operator, _approved);
         operatorList[msg.sender][_operator] = _approved;
     }
 
-    function getApproved(uint256 _tokenId) public view override returns (address) {
+    function getApproved(uint256 _tokenId) public view virtual override returns (address) {
         return approved[_tokenId];
     }
 
-    function isApprovedForAll(address _owner, address _operator) public view override returns (bool) {
+    function isApprovedForAll(address _owner, address _operator) public view virtual override returns (bool) {
         return operatorList[_owner][_operator];
     }
 
-    function supportsInterface(bytes4 interfaceId) public pure override(ERC165, ERC721) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, ERC721) returns (bool) {
         return interfaceId == 0x80ac58cd || interfaceId == 0x01ffc9a7;
     }
 }
