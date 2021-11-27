@@ -4,12 +4,10 @@ import "./EneptiAccount";
 import "./EneptiToken";
 import "./Erc20ConditionalErc721";
 import "./Erc721ConditionalErc721";
-import "./ERC721TokenVault";
 import "./ERC721VaultFactory";
-import "./InitializeProxy";
+import "./LazyERC721Factory";
 import "./LMNToken";
 import "./Settings";
-import "./SocialToken";
 import "./RoomBase";
 
 import { task } from "hardhat/config";
@@ -44,19 +42,9 @@ task("deploy", "Deploy all contracts", async (taskArgs, hre) => {
   await hre.run("deployRoomBase", {});
   await sleep(1000);
 
-  const accounts = await hre.ethers.getSigners();
-
   await hre.run("deployAccountRegistry", {
     accountAddress: (eneptiAccount as EneptiAccount).address,
     tokenAddress: (eneptiToken as EneptiToken).address,
-  });
-  await sleep(1000);
-
-  await hre.run("deploySocialToken", {
-    lmnToken: (lmnToken as LMNToken).address,
-    name: "token_name",
-    symbol: "token_symbol",
-    creator: accounts[1].address,
   });
   await sleep(1000);
 
@@ -73,5 +61,8 @@ task("deploy", "Deploy all contracts", async (taskArgs, hre) => {
     name: "Erc721ConditionalErc721",
     symbol: "E721CE721",
   });
+  await sleep(1000);
+
+  await hre.run("deployLazyERC721Factory", {});
   await sleep(1000);
 });

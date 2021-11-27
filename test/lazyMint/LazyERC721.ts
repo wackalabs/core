@@ -3,38 +3,53 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-wit
 
 import { expect } from "chai";
 import hardhat from "hardhat";
-import { LazyERC721 } from "../../typechain";
+import {
+  ERC20,
+  LazyERC721,
+  LazyERC721Factory,
+  LazyERC721Factory__factory,
+  LazyERC721__factory,
+  TestERC20Token,
+} from "../../typechain";
 import { Signers } from "../types";
+import { Artifact } from "hardhat/types";
+import { utils } from "ethers";
 
 const { ethers } = hardhat;
 
 type NFTVoucher = {
+  creatorToken: string;
   tokenId: number;
   uri: string;
   minPrice: BigNumber;
   signature: string;
 };
 
+const LOTS_OF_TOKENS = utils.parseEther("100");
+
 /**
  * Creates a new NFTVoucher object and signs it using this LazyMinter's signing key.
  *
  * @param {ethers.BigNumber | number} tokenId the id of the un-minted NFT
  * @param {string} uri the metadata URI to associate with this NFT
- * @param {ethers.BigNumber | number} minPrice the minimum price (in wei) that the creator will accept to redeem this NFT. defaults to zero
+ * @param {ethers.BigNumber | number} minPrice the minimum price (in wei) that
+ *        the creator will accept to redeem this NFT. defaults to zero
  *
  * @returns {NFTVoucher}
  */
 async function createVoucher(
   contract: LazyERC721,
   signer: SignerWithAddress,
+  creatorToken: ERC20,
   tokenId: number,
   uri: string,
   minPrice: BigNumber = BigNumber.from(0),
 ): Promise<NFTVoucher> {
-  const voucher = { tokenId, uri, minPrice };
+  const voucher = { creatorToken: creatorToken.address, tokenId, uri, minPrice };
   const domain = await signingDomain(contract);
   const types = {
     NFTVoucher: [
+      { name: "creatorToken", type: "string" },
       { name: "tokenId", type: "uint256" },
       { name: "minPrice", type: "uint256" },
       { name: "uri", type: "string" },
@@ -59,7 +74,7 @@ async function signMessage(address: string, data: any) {
  * @returns {object} the EIP-721 signing domain, tied to the chainId of the signer
  */
 async function signingDomain(contract: LazyERC721) {
-  const chainId = await contract.getChainID();
+  const chainId = hardhat.network.config.chainId;
   const name = await contract.name();
   return {
     name,
@@ -72,14 +87,51 @@ async function signingDomain(contract: LazyERC721) {
 async function deploy() {
   const [admin, user1, _] = await ethers.getSigners();
 
-  const factory = await ethers.getContractFactory("LazyERC721", admin);
-  const contract = await factory.deploy(await admin.getAddress(), "LazyERC721", "LAZY", "1.0");
+  const factoryFactory: LazyERC721Factory__factory = <LazyERC721Factory__factory>(
+    await ethers.getContractFactory("LazyERC721Factory", admin)
+  );
+  const factoryContract: LazyERC721Factory = await factoryFactory.deploy();
+  await factoryContract.deployed();
 
+  const factory: LazyERC721__factory = <LazyERC721__factory>await ethers.getContractFactory("LazyERC721", admin);
+  let contract: LazyERC721 = await factory.deploy();
+  await contract.deployed();
+
+  const testERC20Artifact: Artifact = await hardhat.artifacts.readArtifact("TestERC20Token");
+  const creatorToken = <TestERC20Token>(
+    await hardhat.waffle.deployContract(admin, testERC20Artifact, ["TestERC20Token", "TERC"])
+  );
+  await creatorToken.mint(await admin.getAddress(), LOTS_OF_TOKENS);
+  await creatorToken.mint(await user1.getAddress(), LOTS_OF_TOKENS);
+
+  const deployTx = await factoryContract.connect(admin).mint(creatorToken.address, "LazyERC721", "LAZY", "1.0", false);
+
+  // Compute address.
+  const constructorArgs = ethers.utils.defaultAbiCoder.encode([], []);
+  const salt = ethers.utils.keccak256(constructorArgs);
+  const proxyBytecode = (await ethers.getContractFactory("SplitProxy")).bytecode;
+  const codeHash = ethers.utils.keccak256(proxyBytecode);
+  const proxyAddress = await ethers.utils.getCreate2Address(proxyFactory.address, salt, codeHash);
+  const factoryProxy = await (await ethers.getContractAt("LazyERC721", proxyAddress)).deployed();
+
+  callableProxy = await (await ethers.getContractAt("LazyERC721", factoryProxy.address)).deployed();
+
+  const [contractAddress, contractId, name, symbol, version] = await factoryContract.callStatic.mint(
+    creatorToken.address,
+    "LazyERC721",
+    "LAZY",
+    "1.0",
+    false,
+  );
+  console.log(`LazyERC721 deployed: ${contractAddress}, ${contractId}, ${name}, ${symbol}, ${version}`);
+
+  contract = contract.attach(contractAddress);
   // the redeemerContract is an instance of the contract that's wired up to the redeemer's signing key
-  const redeemerFactory = factory.connect(user1);
-  const redeemerContract = redeemerFactory.attach(contract.address);
+  let redeemerContract = await contract.attach(contractAddress);
+  redeemerContract = redeemerContract.connect(user1);
 
   return {
+    creatorToken,
     minter: admin,
     redeemer: user1,
     contract,
@@ -102,9 +154,11 @@ describe("LazyERC721", function () {
     let redeemer: SignerWithAddress;
     let minter: SignerWithAddress;
     let voucher: NFTVoucher;
+    let creatorToken: ERC20;
 
     beforeEach(async function () {
       const {
+        creatorToken: _creatorToken,
         contract: _contract,
         redeemerContract: _redeemerContract,
         redeemer: _redeemer,
@@ -114,16 +168,18 @@ describe("LazyERC721", function () {
       redeemerContract = <LazyERC721>_redeemerContract;
       redeemer = _redeemer;
       minter = _minter;
+      creatorToken = _creatorToken;
       voucher = await createVoucher(
         contract,
         minter,
+        _creatorToken,
         1,
         "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
       );
     });
 
     it("Should redeem an NFT from a signed voucher", async function () {
-      await expect(redeemerContract.redeem(redeemer.address, voucher))
+      await expect(redeemerContract.redeem(voucher, 0))
         .to.emit(contract, "Transfer") // transfer from null address to minter
         .withArgs("0x0000000000000000000000000000000000000000", minter.address, voucher.tokenId)
         .and.to.emit(contract, "Transfer") // transfer from minter to redeemer
@@ -131,15 +187,13 @@ describe("LazyERC721", function () {
     });
 
     it("Should fail to redeem an NFT that's already been claimed", async function () {
-      await expect(redeemerContract.redeem(redeemer.address, voucher))
+      await expect(redeemerContract.redeem(voucher, 0))
         .to.emit(contract, "Transfer") // transfer from null address to minter
         .withArgs("0x0000000000000000000000000000000000000000", minter.address, voucher.tokenId)
         .and.to.emit(contract, "Transfer") // transfer from minter to redeemer
         .withArgs(minter.address, redeemer.address, voucher.tokenId);
 
-      await expect(redeemerContract.redeem(redeemer.address, voucher)).to.be.revertedWith(
-        "ERC721: token already minted",
-      );
+      await expect(redeemerContract.redeem(voucher, 0)).to.be.revertedWith("ERC721: token already minted");
     });
 
     it("Should fail to redeem an NFT voucher that's signed by an unauthorized account", async function () {
@@ -148,13 +202,12 @@ describe("LazyERC721", function () {
       const voucher = await createVoucher(
         contract,
         rando,
+        creatorToken,
         1,
         "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
       );
 
-      await expect(redeemerContract.redeem(redeemer.address, voucher)).to.be.revertedWith(
-        "Signature invalid or unauthorized",
-      );
+      await expect(redeemerContract.redeem(voucher, 0)).to.be.revertedWith("Signature invalid or unauthorized");
     });
 
     it("Should fail to redeem an NFT voucher that's been modified", async function () {
@@ -163,13 +216,12 @@ describe("LazyERC721", function () {
       const voucher = await createVoucher(
         contract,
         rando,
+        creatorToken,
         1,
         "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
       );
       voucher.tokenId = 2;
-      await expect(redeemerContract.redeem(redeemer.address, voucher)).to.be.revertedWith(
-        "Signature invalid or unauthorized",
-      );
+      await expect(redeemerContract.redeem(voucher, 0)).to.be.revertedWith("Signature invalid or unauthorized");
     });
 
     it("Should fail to redeem an NFT voucher with an invalid signature", async function () {
@@ -178,6 +230,7 @@ describe("LazyERC721", function () {
       const voucher = await createVoucher(
         contract,
         rando,
+        creatorToken,
         1,
         "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
       );
@@ -185,9 +238,7 @@ describe("LazyERC721", function () {
       const dummyData = ethers.utils.randomBytes(128);
       voucher.signature = await signMessage(await redeemer.getAddress(), dummyData);
 
-      await expect(redeemerContract.redeem(redeemer.address, voucher)).to.be.revertedWith(
-        "Signature invalid or unauthorized",
-      );
+      await expect(redeemerContract.redeem(voucher, 0)).to.be.revertedWith("Signature invalid or unauthorized");
     });
 
     it("Should redeem if payment is >= minPrice", async function () {
@@ -195,12 +246,13 @@ describe("LazyERC721", function () {
       const voucher = await createVoucher(
         contract,
         minter,
+        creatorToken,
         1,
         "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
         minPrice,
       );
 
-      await expect(redeemerContract.redeem(redeemer.address, voucher, { value: minPrice }))
+      await expect(redeemerContract.redeem(voucher, minPrice))
         .to.emit(contract, "Transfer") // transfer from null address to minter
         .withArgs("0x0000000000000000000000000000000000000000", minter.address, voucher.tokenId)
         .and.to.emit(contract, "Transfer") // transfer from minter to redeemer
@@ -212,15 +264,14 @@ describe("LazyERC721", function () {
       const voucher = await createVoucher(
         contract,
         minter,
+        creatorToken,
         1,
         "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
         minPrice,
       );
 
       const payment = minPrice.sub(10000);
-      await expect(redeemerContract.redeem(redeemer.address, voucher, { value: payment })).to.be.revertedWith(
-        "Insufficient funds to redeem",
-      );
+      await expect(redeemerContract.redeem(voucher, payment)).to.be.revertedWith("Insufficient funds to redeem");
     });
 
     it("Should make payments available to minter for withdrawal", async function () {
@@ -228,16 +279,14 @@ describe("LazyERC721", function () {
       const voucher = await createVoucher(
         contract,
         minter,
+        creatorToken,
         1,
         "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
         minPrice,
       );
 
       // the payment should be sent from the redeemer's account to the contract address
-      await expect(await redeemerContract.redeem(redeemer.address, voucher, { value: minPrice })).to.changeEtherBalance(
-        redeemer,
-        minPrice.mul(-1),
-      );
+      await expect(await redeemerContract.redeem(voucher, minPrice)).to.changeEtherBalance(redeemer, minPrice.mul(-1));
 
       // minter should have funds available to withdraw
       expect(await contract.availableToWithdraw()).to.equal(minPrice);

@@ -46,7 +46,7 @@ describe("ERC20CreatorToken", function () {
       erc20CreatorToken = <ERC20CreatorToken>(
         await hre.waffle.deployContract(this.signers.admin, tokenArtifact, [reserveToken.address, RESERVE_RATIO])
       );
-      erc20CreatorToken.initialize(creatorAddress, INITIAL_SUPPLY, "Gyld Token", "GYL");
+      await erc20CreatorToken.initialize(creatorAddress, INITIAL_SUPPLY, "Gyld Token", "GYL");
 
       // Mint reserve tokens to CT
       await reserveToken.transfer(erc20CreatorToken.address, INITIAL_RESERVE, { from: creatorAddress });

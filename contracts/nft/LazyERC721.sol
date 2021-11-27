@@ -25,6 +25,8 @@ contract LazyERC721 is
 
     ERC20 public creatorToken;
 
+    bool public gated;
+
     mapping(address => uint256) public pendingWithdrawals;
 
     function initialize(
@@ -32,7 +34,8 @@ contract LazyERC721 is
         ERC20 _creatorToken,
         string memory name,
         string memory symbol,
-        string memory version
+        string memory version,
+        bool _gated
     ) external initializer {
         // initialize inherited contracts
         __ERC721_init(name, symbol);
@@ -42,6 +45,7 @@ contract LazyERC721 is
 
         _setupRole(MINTER_ROLE, creator);
         creatorToken = _creatorToken;
+        gated = _gated;
     }
 
     /// @notice Redeems an NFTVoucher for an actual NFT, creating it in the process.
@@ -54,8 +58,8 @@ contract LazyERC721 is
         // make sure that the signer is authorized to mint NFTs
         require(hasRole(MINTER_ROLE, signer), "Signature invalid or unauthorized");
 
-        // make sure that the redeemer has enough balance of creator token to pay with
-        require(creatorToken.balanceOf(msg.sender) >= redeemPrice, "Insufficient balance to redeem");
+        // mak sure that the redeemer has enough balance of creator token to pay with
+        require(creatorToken.balanceOf(msg.sender) >= redeemPrice, "Insuefficient balance to redeem");
 
         // make sure that the redeemer is paying enough to cover the buyer's cost
         require(redeemPrice >= voucher.minPrice, "Redeem price too low");
@@ -108,17 +112,6 @@ contract LazyERC721 is
             );
     }
 
-    /// @notice Returns the chain id of the current blockchain.
-    /// @dev This is used to workaround an issue with ganache returning different values from the on-chain chainid() function and
-    ///  the eth_chainId RPC method. See https://github.com/protocol/nft-website/issues/121 for context.
-    function getChainID() external view returns (uint256) {
-        uint256 id;
-        assembly {
-            id := chainid()
-        }
-        return id;
-    }
-
     /// @notice Verifies the signature for a given NFTVoucher, returning the address of the signer.
     /// @dev Will revert if the signature is invalid. Does not verify that the signer is authorized to mint NFTs.
     /// @param voucher An NFTVoucher describing an unminted NFT.
@@ -131,6 +124,11 @@ contract LazyERC721 is
         super._burn(tokenId);
     }
 
+    modifier onlyCreatorTokenHolders() {
+        require(creatorToken.balanceOf(msg.sender) > 0, "Only creator token holders can access");
+        _;
+    }
+
     function tokenURI(uint256 tokenId)
         public
         view
@@ -138,6 +136,14 @@ contract LazyERC721 is
         override(ERC721Upgradeable, ERC721URIStorageUpgradeable)
         returns (string memory)
     {
+        if (gated) {
+            return _getTokenURI(tokenId);
+        } else {
+            return super.tokenURI(tokenId);
+        }
+    }
+
+    function _getTokenURI(uint256 tokenId) internal view virtual onlyCreatorTokenHolders returns (string memory) {
         return super.tokenURI(tokenId);
     }
 

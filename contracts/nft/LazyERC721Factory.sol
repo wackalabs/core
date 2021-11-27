@@ -19,13 +19,14 @@ contract LazyERC721Factory is Ownable, Pausable {
     mapping(uint256 => address) public vaults;
 
     /// @notice the CreatorTokenVault logic contract
-    address public immutable logic;
+    address public logic;
 
     event LazyERC721Created(
         address creatorToken,
         string tokenName,
         string tokenSymbol,
         string version,
+        bool gated,
         address vault,
         uint256 vaultId
     );
@@ -38,25 +39,37 @@ contract LazyERC721Factory is Ownable, Pausable {
         ERC20 _creatorToken,
         string memory _name,
         string memory _symbol,
-        string memory _version
-    ) external whenNotPaused returns (uint256) {
+        string memory _version,
+        bool _gated
+    )
+        external
+        whenNotPaused
+        returns (
+            address,
+            uint256,
+            string memory,
+            string memory,
+            string memory
+        )
+    {
         bytes memory _initializationCalldata = abi.encodeWithSignature(
-            "initialize(address,address,string,string,string)",
+            "initialize(address,address,string,string,string,bool)",
             msg.sender,
             _creatorToken,
             _name,
             _symbol,
-            _version
+            _version,
+            _gated
         );
 
         address vault = address(new InitializedProxy(logic, _initializationCalldata));
 
-        emit LazyERC721Created(address(_creatorToken), _name, _symbol, _version, vault, vaultCount);
+        emit LazyERC721Created(address(_creatorToken), _name, _symbol, _version, _gated, vault, vaultCount);
 
         vaults[vaultCount] = vault;
         vaultCount++;
 
-        return vaultCount - 1;
+        return (vault, vaultCount - 1, _name, _symbol, _version);
     }
 
     function pause() external onlyOwner {
