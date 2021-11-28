@@ -274,9 +274,9 @@ describe("SplitProxy via Factory", () => {
             expect(gasUsed.toString()).to.eq("224096");
           });
 
-          it("costs 686759 gas to deploy the splitter", async () => {
+          it("costs 686747 gas to deploy the splitter", async () => {
             const gasUsed = (await splitter.deployTransaction.wait()).gasUsed;
-            expect(gasUsed.toString()).to.eq("686759");
+            expect(gasUsed.toString()).to.eq("686747");
           });
 
           describe("when there is 100 ETH in the account and a window has been incremented", () => {

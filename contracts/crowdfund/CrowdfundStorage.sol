@@ -3,7 +3,7 @@ pragma solidity ^0.8.4;
 
 /**
  * @title CrowdfundStorage
- * @author MirrorXYZ
+ * @author enepti
  */
 contract CrowdfundStorage {
     // The two states that this contract can exist in. "ACTIVE" allows

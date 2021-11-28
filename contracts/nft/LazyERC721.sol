@@ -31,7 +31,7 @@ contract LazyERC721 is
 
     function initialize(
         address creator,
-        ERC20 _creatorToken,
+        address _creatorToken,
         string memory name,
         string memory symbol,
         string memory version,
@@ -44,7 +44,7 @@ contract LazyERC721 is
         __EIP712_init(name, version);
 
         _setupRole(MINTER_ROLE, creator);
-        creatorToken = _creatorToken;
+        creatorToken = ERC20(_creatorToken);
         gated = _gated;
     }
 

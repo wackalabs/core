@@ -36,7 +36,7 @@ contract LazyERC721Factory is Ownable, Pausable {
     }
 
     function mint(
-        ERC20 _creatorToken,
+        address _creatorToken,
         string memory _name,
         string memory _symbol,
         string memory _version,
@@ -64,7 +64,7 @@ contract LazyERC721Factory is Ownable, Pausable {
 
         address vault = address(new InitializedProxy(logic, _initializationCalldata));
 
-        emit LazyERC721Created(address(_creatorToken), _name, _symbol, _version, _gated, vault, vaultCount);
+        emit LazyERC721Created(_creatorToken, _name, _symbol, _version, _gated, vault, vaultCount);
 
         vaults[vaultCount] = vault;
         vaultCount++;

@@ -5,7 +5,7 @@ import { SplitProxy } from "./SplitProxy.sol";
 
 /**
  * @title SplitFactory
- * @author MirrorXYZ
+ * @author enepti
  */
 contract SplitFactory {
     //======== Immutable storage =========

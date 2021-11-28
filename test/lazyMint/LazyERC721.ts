@@ -2,9 +2,11 @@ import { BigNumber } from "@ethersproject/bignumber";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 
 import { expect } from "chai";
-import hardhat from "hardhat";
+import hardhat, { upgrades } from "hardhat";
 import {
   ERC20,
+  InitializedProxy,
+  InitializedProxy__factory,
   LazyERC721,
   LazyERC721Factory,
   LazyERC721Factory__factory,
@@ -13,7 +15,7 @@ import {
 } from "../../typechain";
 import { Signers } from "../types";
 import { Artifact } from "hardhat/types";
-import { utils } from "ethers";
+import { Contract, utils } from "ethers";
 
 const { ethers } = hardhat;
 
@@ -38,7 +40,7 @@ const LOTS_OF_TOKENS = utils.parseEther("100");
  * @returns {NFTVoucher}
  */
 async function createVoucher(
-  contract: LazyERC721,
+  contract: Contract,
   signer: SignerWithAddress,
   creatorToken: ERC20,
   tokenId: number,
@@ -73,7 +75,7 @@ async function signMessage(address: string, data: any) {
 /**
  * @returns {object} the EIP-721 signing domain, tied to the chainId of the signer
  */
-async function signingDomain(contract: LazyERC721) {
+async function signingDomain(contract: Contract) {
   const chainId = hardhat.network.config.chainId;
   const name = await contract.name();
   return {
@@ -87,16 +89,6 @@ async function signingDomain(contract: LazyERC721) {
 async function deploy() {
   const [admin, user1, _] = await ethers.getSigners();
 
-  const factoryFactory: LazyERC721Factory__factory = <LazyERC721Factory__factory>(
-    await ethers.getContractFactory("LazyERC721Factory", admin)
-  );
-  const factoryContract: LazyERC721Factory = await factoryFactory.deploy();
-  await factoryContract.deployed();
-
-  const factory: LazyERC721__factory = <LazyERC721__factory>await ethers.getContractFactory("LazyERC721", admin);
-  let contract: LazyERC721 = await factory.deploy();
-  await contract.deployed();
-
   const testERC20Artifact: Artifact = await hardhat.artifacts.readArtifact("TestERC20Token");
   const creatorToken = <TestERC20Token>(
     await hardhat.waffle.deployContract(admin, testERC20Artifact, ["TestERC20Token", "TERC"])
@@ -104,31 +96,33 @@ async function deploy() {
   await creatorToken.mint(await admin.getAddress(), LOTS_OF_TOKENS);
   await creatorToken.mint(await user1.getAddress(), LOTS_OF_TOKENS);
 
-  const deployTx = await factoryContract.connect(admin).mint(creatorToken.address, "LazyERC721", "LAZY", "1.0", false);
+  const factory: LazyERC721__factory = <LazyERC721__factory>await ethers.getContractFactory("LazyERC721", admin);
 
-  // Compute address.
-  const constructorArgs = ethers.utils.defaultAbiCoder.encode([], []);
-  const salt = ethers.utils.keccak256(constructorArgs);
-  const proxyBytecode = (await ethers.getContractFactory("SplitProxy")).bytecode;
-  const codeHash = ethers.utils.keccak256(proxyBytecode);
-  const proxyAddress = await ethers.utils.getCreate2Address(proxyFactory.address, salt, codeHash);
-  const factoryProxy = await (await ethers.getContractAt("LazyERC721", proxyAddress)).deployed();
+  const factoryFactory: LazyERC721Factory__factory = <LazyERC721Factory__factory>(
+    await ethers.getContractFactory("LazyERC721Factory", admin)
+  );
+  const factoryContract = await factoryFactory.deploy();
+  await factoryContract.deployed();
 
-  callableProxy = await (await ethers.getContractAt("LazyERC721", factoryProxy.address)).deployed();
+  // const proxyFactory: InitializedProxy__factory = <InitializedProxy__factory>(
+  //   await ethers.getContractFactory("InitializedProxy", admin)
+  // );
 
-  const [contractAddress, contractId, name, symbol, version] = await factoryContract.callStatic.mint(
+  const [vault, vaultId, _name, _symbol, _version] = await factoryContract.callStatic.mint(
     creatorToken.address,
     "LazyERC721",
     "LAZY",
     "1.0",
     false,
   );
-  console.log(`LazyERC721 deployed: ${contractAddress}, ${contractId}, ${name}, ${symbol}, ${version}`);
 
-  contract = contract.attach(contractAddress);
+  console.log("LazyERC721 proxy minted at", vault, vaultId);
+  const contract = factory.attach(vault);
+  await contract.deployed();
+
   // the redeemerContract is an instance of the contract that's wired up to the redeemer's signing key
-  let redeemerContract = await contract.attach(contractAddress);
-  redeemerContract = redeemerContract.connect(user1);
+  const redeemerFactory = factory.connect(user1);
+  const redeemerContract = redeemerFactory.attach(vault);
 
   return {
     creatorToken,
@@ -164,8 +158,8 @@ describe("LazyERC721", function () {
         redeemer: _redeemer,
         minter: _minter,
       } = await deploy();
-      contract = <LazyERC721>_contract;
-      redeemerContract = <LazyERC721>_redeemerContract;
+      contract = _contract;
+      redeemerContract = _redeemerContract;
       redeemer = _redeemer;
       minter = _minter;
       creatorToken = _creatorToken;

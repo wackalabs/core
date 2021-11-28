@@ -23,7 +23,7 @@ interface ICrowdfundFactory {
 
 /**
  * @title CrowdfundProxy
- * @author MirrorXYZ
+ * @author enepti
  */
 contract CrowdfundProxy is CrowdfundStorage {
     constructor() {

@@ -13,7 +13,7 @@ interface ISplitFactory {
 
 /**
  * @title SplitProxy
- * @author MirrorXYZ
+ * @author enepti
  */
 contract SplitProxy is SplitStorage {
     constructor() {

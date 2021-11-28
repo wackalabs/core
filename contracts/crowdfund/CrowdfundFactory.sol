@@ -5,7 +5,7 @@ import { CrowdfundProxy } from "./CrowdfundProxy.sol";
 
 /**
  * @title CrowdfundFactory
- * @author MirrorXYZ
+ * @author enepti
  */
 contract CrowdfundFactory {
     //======== Structs ========

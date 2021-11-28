@@ -5,7 +5,7 @@ import { CrowdfundStorage } from "./CrowdfundStorage.sol";
 
 /**
  * @title CrowdfundLogic
- * @author MirrorXYZ
+ * @author enepti
  *
  * Crowdfund the creation of NFTs by issuing ERC20 tokens that
  * can be redeemed for the underlying value of the NFT once sold.

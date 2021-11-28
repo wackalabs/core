@@ -3,7 +3,7 @@ pragma solidity ^0.8.4;
 
 /**
  * @title SplitStorage
- * @author MirrorXYZ
+ * @author enepti
  */
 contract SplitStorage {
     bytes32 public merkleRoot;

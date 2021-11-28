@@ -17,7 +17,7 @@ interface IWETH {
 
 /**
  * @title Splitter
- * @author MirrorXYZ
+ * @author enepti
  *
  * Building on the work from the Uniswap team at https://github.com/Uniswap/merkle-distributor
  */
