@@ -2,17 +2,8 @@ import { BigNumber } from "@ethersproject/bignumber";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 
 import { expect } from "chai";
-import hardhat, { upgrades } from "hardhat";
-import {
-  ERC20,
-  InitializedProxy,
-  InitializedProxy__factory,
-  LazyERC721,
-  LazyERC721Factory,
-  LazyERC721Factory__factory,
-  LazyERC721__factory,
-  TestERC20Token,
-} from "../../typechain";
+import hardhat from "hardhat";
+import { ERC20, LazyERC721, LazyERC721__factory, TestERC20Token } from "../../typechain";
 import { Signers } from "../types";
 import { Artifact } from "hardhat/types";
 import { Contract, utils } from "ethers";
@@ -21,7 +12,7 @@ const { ethers } = hardhat;
 
 type NFTVoucher = {
   creatorToken: string;
-  tokenId: number;
+  tokenId: BigNumber;
   uri: string;
   minPrice: BigNumber;
   signature: string;
@@ -47,21 +38,28 @@ async function createVoucher(
   uri: string,
   minPrice: BigNumber = BigNumber.from(0),
 ): Promise<NFTVoucher> {
-  const voucher = { creatorToken: creatorToken.address, tokenId, uri, minPrice };
+  const voucher = {
+    tokenId: BigNumber.from(tokenId),
+    minPrice,
+    creatorToken: creatorToken.address,
+    uri,
+  };
   const domain = await signingDomain(contract);
   const types = {
     NFTVoucher: [
-      { name: "creatorToken", type: "string" },
       { name: "tokenId", type: "uint256" },
       { name: "minPrice", type: "uint256" },
+      { name: "creatorToken", type: "string" },
       { name: "uri", type: "string" },
     ],
   };
   const signature = await signer._signTypedData(domain, types, voucher);
-  return {
+  const nftVoucher = {
     ...voucher,
     signature,
   };
+  console.log("NFT voucher", JSON.stringify(nftVoucher, null, 2));
+  return nftVoucher;
 }
 
 // sign message broken in ethers@5.5.0.
@@ -97,32 +95,14 @@ async function deploy() {
   await creatorToken.mint(await user1.getAddress(), LOTS_OF_TOKENS);
 
   const factory: LazyERC721__factory = <LazyERC721__factory>await ethers.getContractFactory("LazyERC721", admin);
-
-  const factoryFactory: LazyERC721Factory__factory = <LazyERC721Factory__factory>(
-    await ethers.getContractFactory("LazyERC721Factory", admin)
-  );
-  const factoryContract = await factoryFactory.deploy();
-  await factoryContract.deployed();
-
-  // const proxyFactory: InitializedProxy__factory = <InitializedProxy__factory>(
-  //   await ethers.getContractFactory("InitializedProxy", admin)
-  // );
-
-  const [vault, vaultId, _name, _symbol, _version] = await factoryContract.callStatic.mint(
-    creatorToken.address,
-    "LazyERC721",
-    "LAZY",
-    "1.0",
-    false,
-  );
-
-  console.log("LazyERC721 proxy minted at", vault, vaultId);
-  const contract = factory.attach(vault);
+  const contract = await factory.deploy();
   await contract.deployed();
+
+  await contract.initialize(await admin.getAddress(), creatorToken.address, "LazyERC721", "LAZY", "1.0", false);
 
   // the redeemerContract is an instance of the contract that's wired up to the redeemer's signing key
   const redeemerFactory = factory.connect(user1);
-  const redeemerContract = redeemerFactory.attach(vault);
+  const redeemerContract = redeemerFactory.attach(contract.address);
 
   return {
     creatorToken,
@@ -214,7 +194,7 @@ describe("LazyERC721", function () {
         1,
         "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
       );
-      voucher.tokenId = 2;
+      voucher.tokenId = BigNumber.from(2);
       await expect(redeemerContract.redeem(voucher, 0)).to.be.revertedWith("Signature invalid or unauthorized");
     });
 

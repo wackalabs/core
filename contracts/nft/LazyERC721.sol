@@ -12,6 +12,8 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgra
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
 
+import "hardhat/console.sol";
+
 import "../interfaces/ILazyERC721.sol";
 
 contract LazyERC721 is
@@ -43,6 +45,7 @@ contract LazyERC721 is
         __AccessControl_init();
         __EIP712_init(name, version);
 
+        console.log("creator %s", creator);
         _setupRole(MINTER_ROLE, creator);
         creatorToken = ERC20(_creatorToken);
         gated = _gated;
@@ -53,7 +56,10 @@ contract LazyERC721 is
     /// @param redeemPrice price submitted by the redeemer in CreatorToken ERC20.
     function redeem(NFTVoucher calldata voucher, uint256 redeemPrice) external override returns (uint256) {
         // make sure signature is valid and get the address of the signer
+        console.logBytes(voucher.signature);
         address signer = _verify(voucher);
+
+        console.log("signer %s", signer);
 
         // make sure that the signer is authorized to mint NFTs
         require(hasRole(MINTER_ROLE, signer), "Signature invalid or unauthorized");
@@ -102,7 +108,7 @@ contract LazyERC721 is
             _hashTypedDataV4(
                 keccak256(
                     abi.encode(
-                        keccak256("NFTVoucher(uint256,uint256,address,string)"),
+                        keccak256("NFTVoucher(uint256 tokenId, uint256 minPrice, address creatorToken, string uri)"),
                         voucher.tokenId,
                         voucher.minPrice,
                         voucher.creatorToken,
