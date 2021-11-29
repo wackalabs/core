@@ -14,6 +14,7 @@ contract RealmLogic is RealmStorage {
     // ============ Events ============
 
     event Contribution(address contributor, uint256 amount);
+    event RealmOpened();
     event RealmClosed();
     event Claimed(uint256 amountRaised, uint256 creatorAllocation);
     event Redeemed(address contributor, uint256 amount);
@@ -113,13 +114,23 @@ contract RealmLogic is RealmStorage {
     // ============ Operator Methods ============
 
     /**
-     * @notice Transfers all funds to operator, and mints tokens for the operator.
-     *  Updates status to INACTIVE.
+     * @notice Updates status to ACTIVE.
+     * @dev Emits the RealmOpened event.
+     */
+    function openRealm() external onlyOperator nonReentrant {
+        require(status == Status.INACTIVE, "Realm: Realm must be closed");
+        // Close realm status, move to active.
+        status = Status.ACTIVE;
+        emit RealmOpened();
+    }
+
+    /**
+     * @notice Updates status to INACTIVE.
      * @dev Emits the RealmClosed event.
      */
     function closeRealm() external onlyOperator nonReentrant {
         require(status == Status.ACTIVE, "Realm: Realm must be open");
-        // Close realm status, move to tradable.
+        // Close realm status, move to inactive.
         status = Status.INACTIVE;
         emit RealmClosed();
     }
