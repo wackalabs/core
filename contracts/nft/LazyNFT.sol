@@ -3,26 +3,17 @@ pragma solidity ^0.8.4;
 pragma abicoder v2; // required to accept structs as function parameters
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
-import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
 
-// import "hardhat/console.sol";
+import "hardhat/console.sol";
 
 import "../interfaces/ILazyERC721.sol";
 
-contract LazyERC721 is
-    ILazyERC721,
-    ERC721Upgradeable,
-    ERC721URIStorageUpgradeable,
-    EIP712Upgradeable,
-    AccessControlUpgradeable
-{
+contract LazyNFT is ILazyERC721, ERC721, ERC721URIStorage, EIP712, AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     ERC20 public creatorToken;
@@ -31,21 +22,15 @@ contract LazyERC721 is
 
     mapping(address => uint256) public pendingWithdrawals;
 
-    function initialize(
+    constructor(
         address creator,
         address _creatorToken,
         string memory name,
         string memory symbol,
         string memory version,
         bool _gated
-    ) external initializer {
-        // initialize inherited contracts
-        __ERC721_init(name, symbol);
-        __ERC721URIStorage_init();
-        __AccessControl_init();
-        __EIP712_init(name, version);
-
-        // console.log("LazyERC721.sol: creator %s", creator);
+    ) ERC721(name, symbol) EIP712(name, version) {
+        console.log("LazyERC721.sol: creator %s", creator);
         _setupRole(MINTER_ROLE, creator);
         creatorToken = ERC20(_creatorToken);
         gated = _gated;
@@ -56,14 +41,13 @@ contract LazyERC721 is
     /// @param redeemPrice price submitted by the redeemer in CreatorToken ERC20.
     function redeem(NFTVoucher calldata voucher, uint256 redeemPrice) external override returns (uint256) {
         // make sure signature is valid and get the address of the signer
-        // console.log(voucher.tokenId);
-        // console.log(voucher.minPrice);
-        // console.log(voucher.uri);
-        // console.logBytes(voucher.signature);
-        // console.log("redeemPrice %s %s %s", redeemPrice, msg.sender, creatorToken.balanceOf(msg.sender));
+        console.log(voucher.tokenId);
+        console.log(voucher.minPrice);
+        console.log(voucher.uri);
+        console.logBytes(voucher.signature);
         address signer = _verify(voucher);
 
-        // console.log("LazyERC721.sol: signer %s", signer);
+        console.log("LazyERC721.sol: signer %s", signer);
 
         // make sure that the signer is authorized to mint NFTs
         require(hasRole(MINTER_ROLE, signer), "Signature invalid or unauthorized");
@@ -97,7 +81,7 @@ contract LazyERC721 is
         uint256 amount = pendingWithdrawals[msg.sender];
         // zero account before transfer to prevent re-entrancy attack
         pendingWithdrawals[msg.sender] = 0;
-        creatorToken.transfer(msg.sender, amount);
+        creatorToken.transferFrom(address(this), msg.sender, amount);
     }
 
     /// @notice Retuns the amount of creator token balance available to the caller to withdraw.
@@ -129,7 +113,7 @@ contract LazyERC721 is
         return ECDSA.recover(digest, voucher.signature);
     }
 
-    function _burn(uint256 tokenId) internal virtual override(ERC721Upgradeable, ERC721URIStorageUpgradeable) {
+    function _burn(uint256 tokenId) internal virtual override(ERC721, ERC721URIStorage) {
         super._burn(tokenId);
     }
 
@@ -138,13 +122,7 @@ contract LazyERC721 is
         _;
     }
 
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        virtual
-        override(ERC721Upgradeable, ERC721URIStorageUpgradeable)
-        returns (string memory)
-    {
+    function tokenURI(uint256 tokenId) public view virtual override(ERC721, ERC721URIStorage) returns (string memory) {
         if (gated) {
             return _getTokenURI(tokenId);
         } else {
@@ -156,14 +134,7 @@ contract LazyERC721 is
         return super.tokenURI(tokenId);
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(AccessControlUpgradeable, ERC721Upgradeable)
-        returns (bool)
-    {
-        return
-            ERC721Upgradeable.supportsInterface(interfaceId) || AccessControlUpgradeable.supportsInterface(interfaceId);
+    function supportsInterface(bytes4 interfaceId) public view virtual override(AccessControl, ERC721) returns (bool) {
+        return ERC721.supportsInterface(interfaceId) || AccessControl.supportsInterface(interfaceId);
     }
 }

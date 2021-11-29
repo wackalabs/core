@@ -12,8 +12,6 @@ interface ILazyERC721 {
         uint256 tokenId;
         /// @notice The minimum price (in wei) that the NFT creator is willing to accept for the initial sale of this NFT.
         uint256 minPrice;
-        /// @notice The address of the creator token that redeemers can mint the NFT with.
-        address creatorToken;
         /// @notice The metadata URI to associate with this token.
         string uri;
         /// @notice the EIP-712 signature of all other fields in the NFTVoucher struct.

@@ -1,17 +1,16 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { BigNumber } from "@ethersproject/bignumber";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 
 import { expect } from "chai";
 import hardhat from "hardhat";
-import { ERC20, LazyERC721, LazyERC721__factory, TestERC20Token } from "../../typechain";
+import { ERC20, LazyERC721, LazyERC721__factory, TestERC20Token, TestERC20Token__factory } from "../../typechain";
 import { Signers } from "../types";
-import { Artifact } from "hardhat/types";
 import { Contract, utils } from "ethers";
 
 const { ethers } = hardhat;
 
 type NFTVoucher = {
-  creatorToken: string;
   tokenId: BigNumber;
   uri: string;
   minPrice: BigNumber;
@@ -33,32 +32,31 @@ const LOTS_OF_TOKENS = utils.parseEther("100");
 async function createVoucher(
   contract: Contract,
   signer: SignerWithAddress,
-  creatorToken: ERC20,
   tokenId: number,
   uri: string,
   minPrice: BigNumber = BigNumber.from(0),
 ): Promise<NFTVoucher> {
   const voucher = {
     tokenId: BigNumber.from(tokenId),
-    minPrice,
-    creatorToken: creatorToken.address,
     uri,
+    minPrice,
   };
   const domain = await signingDomain(contract);
   const types = {
     NFTVoucher: [
       { name: "tokenId", type: "uint256" },
       { name: "minPrice", type: "uint256" },
-      { name: "creatorToken", type: "string" },
       { name: "uri", type: "string" },
     ],
   };
   const signature = await signer._signTypedData(domain, types, voucher);
+  const verifiedAddress = ethers.utils.verifyTypedData(domain, types, voucher, signature);
+
   const nftVoucher = {
     ...voucher,
     signature,
   };
-  console.log("NFT voucher", JSON.stringify(nftVoucher, null, 2));
+  // console.log("NFT voucher", JSON.stringify(nftVoucher, null, 2), signer.address, verifiedAddress);
   return nftVoucher;
 }
 
@@ -87,10 +85,12 @@ async function signingDomain(contract: Contract) {
 async function deploy() {
   const [admin, user1, _] = await ethers.getSigners();
 
-  const testERC20Artifact: Artifact = await hardhat.artifacts.readArtifact("TestERC20Token");
-  const creatorToken = <TestERC20Token>(
-    await hardhat.waffle.deployContract(admin, testERC20Artifact, ["TestERC20Token", "TERC"])
+  const testERC20Factory: TestERC20Token__factory = <TestERC20Token__factory>(
+    await ethers.getContractFactory("TestERC20Token", admin)
   );
+  const creatorToken = await testERC20Factory.deploy("TestERC20Token", "TERC");
+  await creatorToken.deployed();
+
   await creatorToken.mint(await admin.getAddress(), LOTS_OF_TOKENS);
   await creatorToken.mint(await user1.getAddress(), LOTS_OF_TOKENS);
 
@@ -99,6 +99,11 @@ async function deploy() {
   await contract.deployed();
 
   await contract.initialize(await admin.getAddress(), creatorToken.address, "LazyERC721", "LAZY", "1.0", false);
+  await creatorToken.approve(contract.address, LOTS_OF_TOKENS);
+
+  const redeemerCreatorTokenFactory = testERC20Factory.connect(user1);
+  const redeemerCreatorToken = redeemerCreatorTokenFactory.attach(creatorToken.address);
+  await redeemerCreatorToken.approve(contract.address, LOTS_OF_TOKENS);
 
   // the redeemerContract is an instance of the contract that's wired up to the redeemer's signing key
   const redeemerFactory = factory.connect(user1);
@@ -106,6 +111,7 @@ async function deploy() {
 
   return {
     creatorToken,
+    redeemerCreatorToken,
     minter: admin,
     redeemer: user1,
     contract,
@@ -129,10 +135,12 @@ describe("LazyERC721", function () {
     let minter: SignerWithAddress;
     let voucher: NFTVoucher;
     let creatorToken: ERC20;
+    let redeemerCreatorToken: ERC20;
 
     beforeEach(async function () {
       const {
         creatorToken: _creatorToken,
+        redeemerCreatorToken: _redeemerCreatorToken,
         contract: _contract,
         redeemerContract: _redeemerContract,
         redeemer: _redeemer,
@@ -143,10 +151,10 @@ describe("LazyERC721", function () {
       redeemer = _redeemer;
       minter = _minter;
       creatorToken = _creatorToken;
+      redeemerCreatorToken = _redeemerCreatorToken;
       voucher = await createVoucher(
         contract,
         minter,
-        _creatorToken,
         1,
         "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
       );
@@ -176,7 +184,6 @@ describe("LazyERC721", function () {
       const voucher = await createVoucher(
         contract,
         rando,
-        creatorToken,
         1,
         "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
       );
@@ -190,7 +197,6 @@ describe("LazyERC721", function () {
       const voucher = await createVoucher(
         contract,
         rando,
-        creatorToken,
         1,
         "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
       );
@@ -204,7 +210,6 @@ describe("LazyERC721", function () {
       const voucher = await createVoucher(
         contract,
         rando,
-        creatorToken,
         1,
         "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
       );
@@ -220,7 +225,6 @@ describe("LazyERC721", function () {
       const voucher = await createVoucher(
         contract,
         minter,
-        creatorToken,
         1,
         "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
         minPrice,
@@ -238,14 +242,13 @@ describe("LazyERC721", function () {
       const voucher = await createVoucher(
         contract,
         minter,
-        creatorToken,
         1,
         "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
         minPrice,
       );
 
       const payment = minPrice.sub(10000);
-      await expect(redeemerContract.redeem(voucher, payment)).to.be.revertedWith("Insufficient funds to redeem");
+      await expect(redeemerContract.redeem(voucher, payment)).to.be.revertedWith("Redeem price too low");
     });
 
     it("Should make payments available to minter for withdrawal", async function () {
@@ -253,23 +256,26 @@ describe("LazyERC721", function () {
       const voucher = await createVoucher(
         contract,
         minter,
-        creatorToken,
         1,
         "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
         minPrice,
       );
 
       // the payment should be sent from the redeemer's account to the contract address
-      await expect(await redeemerContract.redeem(voucher, minPrice)).to.changeEtherBalance(redeemer, minPrice.mul(-1));
+      await expect(() => redeemerContract.redeem(voucher, minPrice)).to.changeTokenBalance(
+        redeemerCreatorToken,
+        redeemer,
+        minPrice.mul(-1).toString(),
+      );
 
       // minter should have funds available to withdraw
-      expect(await contract.availableToWithdraw()).to.equal(minPrice);
+      await expect(await contract.availableToWithdraw()).to.equal(minPrice.toString());
 
       // withdrawal should increase minter's balance
-      await expect(await contract.withdraw()).to.changeEtherBalance(minter, minPrice);
+      await expect(() => contract.withdraw()).to.changeTokenBalance(creatorToken, minter, minPrice.toString());
 
       // minter should now have zero available
-      expect(await contract.availableToWithdraw()).to.equal(0);
+      await expect(await contract.availableToWithdraw()).to.equal(0);
     });
   });
 });
